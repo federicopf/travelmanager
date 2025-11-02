@@ -1,0 +1,91 @@
+import { Alert, StyleSheet, TouchableOpacity } from 'react-native';
+
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useAuth } from '@/context/auth-context';
+import { router } from 'expo-router';
+
+export default function SettingsScreen() {
+  const { user, signOut } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Sei sicuro di voler uscire?',
+      [
+        {
+          text: 'Annulla',
+          style: 'cancel',
+        },
+        {
+          text: 'Esci',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+              router.replace('/login');
+            } catch (error: any) {
+              Alert.alert('Errore', error.message || 'Errore durante il logout');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <ThemedView style={styles.container}>
+      <ThemedView style={styles.header}>
+        <ThemedText type="title">Impostazioni</ThemedText>
+      </ThemedView>
+      
+      <ThemedView style={styles.content}>
+        {user && (
+          <ThemedView style={styles.section}>
+            <ThemedText style={styles.label}>Email</ThemedText>
+            <ThemedText style={styles.value}>{user.email}</ThemedText>
+          </ThemedView>
+        )}
+        
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <ThemedText style={styles.logoutText}>Esci</ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    padding: 16,
+    paddingTop: 60,
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+    gap: 24,
+  },
+  section: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    opacity: 0.6,
+  },
+  value: {
+    fontSize: 16,
+  },
+  logoutButton: {
+    marginTop: 'auto',
+    padding: 16,
+    alignItems: 'center',
+  },
+  logoutText: {
+    fontSize: 16,
+    opacity: 0.8,
+  },
+});
+
