@@ -102,6 +102,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: 20,
+    backgroundColor: '#fff',
   },
   form: {
     gap: 16,
