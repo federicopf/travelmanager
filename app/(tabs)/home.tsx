@@ -1,16 +1,19 @@
 import { StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={styles.header}>
         <ThemedText type="title">Travel Manager</ThemedText>
       </ThemedView>
       
-      <ThemedView style={styles.content}>
+      <ThemedView style={[styles.content, { paddingBottom: insets.bottom + 100 }]}>
         <ThemedText>Benvenuto nella tua app di gestione viaggi</ThemedText>
       </ThemedView>
     </ThemedView>
@@ -29,6 +32,5 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
-    paddingBottom: 100,
   },
 });

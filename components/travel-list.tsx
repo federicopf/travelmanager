@@ -1,5 +1,6 @@
 import { Travel } from '@/constants/types';
 import { FlatList, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 import { TravelCard } from './travel-card';
@@ -10,6 +11,9 @@ interface TravelListProps {
 }
 
 export function TravelList({ travels, onTravelPress }: TravelListProps) {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = insets.bottom + 100;
+
   if (travels.length === 0) {
     return (
       <ThemedView style={styles.emptyContainer}>
@@ -30,7 +34,7 @@ export function TravelList({ travels, onTravelPress }: TravelListProps) {
           onPress={() => onTravelPress?.(item)}
         />
       )}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, { paddingBottom: bottomPadding }]}
       showsVerticalScrollIndicator={false}
     />
   );
@@ -39,7 +43,6 @@ export function TravelList({ travels, onTravelPress }: TravelListProps) {
 const styles = StyleSheet.create({
   list: {
     padding: 16,
-    paddingBottom: 100,
   },
   emptyContainer: {
     flex: 1,
