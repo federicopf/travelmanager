@@ -3,14 +3,13 @@ import { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    FlatList,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
     StyleSheet,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -167,22 +166,17 @@ export default function CreateTravelScreen() {
             </View>
             {showResults && searchResults.length > 0 && (
               <View style={styles.resultsContainer}>
-                <FlatList
-                  data={searchResults}
-                  keyExtractor={(item) => item.place_id.toString()}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={styles.resultItem}
-                      onPress={() => handleSelectPlace(item)}>
-                      <IconSymbol name="location.fill" size={16} color="#0a7ea4" />
-                      <ThemedText style={styles.resultText} numberOfLines={2}>
-                        {item.display_name}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  )}
-                  nestedScrollEnabled
-                  style={styles.resultsList}
-                />
+                {searchResults.map((item) => (
+                  <TouchableOpacity
+                    key={item.place_id.toString()}
+                    style={styles.resultItem}
+                    onPress={() => handleSelectPlace(item)}>
+                    <IconSymbol name="location.fill" size={16} color="#0a7ea4" />
+                    <ThemedText style={styles.resultText} numberOfLines={2}>
+                      {item.display_name}
+                    </ThemedText>
+                  </TouchableOpacity>
+                ))}
               </View>
             )}
             {selectedPlace && (
@@ -307,9 +301,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 4,
     overflow: 'hidden',
-  },
-  resultsList: {
-    maxHeight: 200,
   },
   resultItem: {
     flexDirection: 'row',
