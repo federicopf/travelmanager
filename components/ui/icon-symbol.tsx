@@ -21,6 +21,8 @@ const MAPPING = {
   'airplane': 'flight',
   'suitcase.fill': 'work',
   'gear': 'settings',
+  'eye.fill': 'visibility',
+  'eye.slash.fill': 'visibility-off',
 } as IconMapping;
 
 /**
