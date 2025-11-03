@@ -23,6 +23,10 @@ const MAPPING = {
   'gear': 'settings',
   'eye.fill': 'visibility',
   'eye.slash.fill': 'visibility-off',
+  'calendar': 'event',
+  'checkmark.circle.fill': 'check-circle',
+  'location.fill': 'location-on',
+  'plus.circle.fill': 'add-circle',
 } as IconMapping;
 
 /**

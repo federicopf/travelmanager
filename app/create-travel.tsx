@@ -10,9 +10,11 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/auth-context';
 import { createTravel } from '@/lib/travels';
 
@@ -21,8 +23,10 @@ export default function CreateTravelScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [destination, setDestination] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -41,15 +45,18 @@ export default function CreateTravelScreen() {
       return;
     }
 
-    if (!startDate || !endDate) {
-      Alert.alert('Errore', 'Inserisci le date di inizio e fine');
-      return;
-    }
-
-    if (new Date(startDate) > new Date(endDate)) {
+    if (startDate > endDate) {
       Alert.alert('Errore', 'La data di inizio deve essere precedente alla data di fine');
       return;
     }
+
+    // Formatta le date come YYYY-MM-DD
+    const formatDate = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
 
     setLoading(true);
     try {
@@ -58,8 +65,8 @@ export default function CreateTravelScreen() {
         title: title.trim(),
         description: description.trim() || undefined,
         destination: destination.trim(),
-        startDate,
-        endDate,
+        startDate: formatDate(startDate),
+        endDate: formatDate(endDate),
         status: 'planned',
       });
 
@@ -125,23 +132,89 @@ export default function CreateTravelScreen() {
           <View style={styles.dateRow}>
             <View style={styles.dateInput}>
               <ThemedText style={styles.label}>Data inizio *</ThemedText>
-              <TextInput
-                style={styles.input}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#999"
-                value={startDate}
-                onChangeText={setStartDate}
-              />
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setShowStartPicker(true)}>
+                <ThemedText style={styles.dateButtonText}>
+                  {startDate.toLocaleDateString('it-IT', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                  })}
+                </ThemedText>
+                <IconSymbol name="calendar" size={20} color="#0a7ea4" />
+              </TouchableOpacity>
+              {showStartPicker && (
+                <DateTimePicker
+                  value={startDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, selectedDate) => {
+                    if (Platform.OS === 'android') {
+                      setShowStartPicker(false);
+                    }
+                    if (event.type === 'set' && selectedDate) {
+                      setStartDate(selectedDate);
+                    }
+                    if (Platform.OS === 'android' || (Platform.OS === 'ios' && event.type === 'dismissed')) {
+                      setShowStartPicker(false);
+                    }
+                  }}
+                  minimumDate={new Date()}
+                />
+              )}
+              {Platform.OS === 'ios' && showStartPicker && (
+                <View style={styles.pickerActions}>
+                  <TouchableOpacity
+                    style={styles.pickerButton}
+                    onPress={() => setShowStartPicker(false)}>
+                    <ThemedText style={styles.pickerButtonText}>Conferma</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
             <View style={styles.dateInput}>
               <ThemedText style={styles.label}>Data fine *</ThemedText>
-              <TextInput
-                style={styles.input}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#999"
-                value={endDate}
-                onChangeText={setEndDate}
-              />
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setShowEndPicker(true)}>
+                <ThemedText style={styles.dateButtonText}>
+                  {endDate.toLocaleDateString('it-IT', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                  })}
+                </ThemedText>
+                <IconSymbol name="calendar" size={20} color="#0a7ea4" />
+              </TouchableOpacity>
+              {showEndPicker && (
+                <DateTimePicker
+                  value={endDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, selectedDate) => {
+                    if (Platform.OS === 'android') {
+                      setShowEndPicker(false);
+                    }
+                    if (event.type === 'set' && selectedDate) {
+                      setEndDate(selectedDate);
+                    }
+                    if (Platform.OS === 'android' || (Platform.OS === 'ios' && event.type === 'dismissed')) {
+                      setShowEndPicker(false);
+                    }
+                  }}
+                  minimumDate={startDate}
+                />
+              )}
+              {Platform.OS === 'ios' && showEndPicker && (
+                <View style={styles.pickerActions}>
+                  <TouchableOpacity
+                    style={styles.pickerButton}
+                    onPress={() => setShowEndPicker(false)}>
+                    <ThemedText style={styles.pickerButtonText}>Conferma</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
 
@@ -205,6 +278,18 @@ const styles = StyleSheet.create({
   dateInput: {
     flex: 1,
     gap: 8,
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 16,
+    fontSize: 16,
+  },
+  dateButtonText: {
+    fontSize: 16,
   },
   button: {
     backgroundColor: '#0a7ea4',
