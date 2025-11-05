@@ -1,14 +1,14 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -100,7 +100,8 @@ export default function CreateTravelScreen() {
       });
 
       // Naviga direttamente al dettaglio del viaggio appena creato
-      router.push(`/travel-detail?id=${newTravel.id}`);
+      // Usa replace per sostituire create-travel nello stack, così il back porta alla lista viaggi
+      router.replace(`/travel-detail?id=${newTravel.id}`);
     } catch (error: any) {
       Alert.alert('Errore', error.message || 'Errore durante la creazione del viaggio');
       setLoading(false);
