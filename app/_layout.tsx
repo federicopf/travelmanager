@@ -28,6 +28,12 @@ export default function RootLayout() {
                 presentation: 'modal',
               }} 
             />
+            <Stack.Screen 
+              name="travel-detail" 
+              options={{ 
+                title: 'Dettaglio viaggio',
+              }} 
+            />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>

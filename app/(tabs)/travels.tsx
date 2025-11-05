@@ -61,8 +61,7 @@ export default function TravelsScreen() {
   );
 
   const handleTravelPress = (travel: Travel) => {
-    console.log('Travel pressed:', travel);
-    // TODO: Navigate to travel detail screen
+    router.push(`/travel-detail?id=${travel.id}`);
   };
 
   if (loading) {
