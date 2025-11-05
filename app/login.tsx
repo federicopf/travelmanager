@@ -47,7 +47,8 @@ export default function LoginScreen() {
     try {
       if (isSignUp) {
         await signUp(email, password, username);
-        Alert.alert('Successo', 'Account creato con successo!');
+        // Login automatico dopo la registrazione
+        await signIn(email, password);
         router.replace('/(tabs)/home');
       } else {
         await signIn(email, password);

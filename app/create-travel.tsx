@@ -87,7 +87,7 @@ export default function CreateTravelScreen() {
 
     setLoading(true);
     try {
-      await createTravel({
+      const newTravel = await createTravel({
         userId: user.id,
         title: title.trim(),
         description: description.trim() || undefined,
@@ -99,15 +99,10 @@ export default function CreateTravelScreen() {
         longitude: selectedPlace ? selectedPlace.longitude : undefined,
       });
 
-      Alert.alert('Successo', 'Viaggio creato con successo!', [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]);
+      // Naviga direttamente al dettaglio del viaggio appena creato
+      router.push(`/travel-detail?id=${newTravel.id}`);
     } catch (error: any) {
       Alert.alert('Errore', error.message || 'Errore durante la creazione del viaggio');
-    } finally {
       setLoading(false);
     }
   };

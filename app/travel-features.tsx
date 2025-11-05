@@ -103,6 +103,32 @@ export default function TravelFeaturesScreen() {
             </View>
           </TouchableOpacity>
         </ThemedView>
+
+        {/* Members Section */}
+        <ThemedView style={styles.section}>
+          <TouchableOpacity
+            style={styles.featureCard}
+            onPress={() => Alert.alert('Gestisci membri', 'Funzionalità in arrivo')}
+            activeOpacity={0.7}>
+            <View style={styles.featureCardHeader}>
+              <View style={styles.featureIconContainer}>
+                <IconSymbol name="person.2.fill" size={24} color="#0a7ea4" />
+              </View>
+              <View style={styles.featureCardContent}>
+                <ThemedText style={styles.featureCardTitle}>Gestisci membri</ThemedText>
+                <ThemedText style={styles.featureCardSubtitle}>
+                  Gestisci i membri del viaggio
+                </ThemedText>
+              </View>
+              <IconSymbol name="chevron.right" size={20} color="#687076" />
+            </View>
+            <View style={styles.featureCardFooter}>
+              <ThemedText style={styles.featureCardPlaceholder}>
+                0 membri • Funzionalità in arrivo
+              </ThemedText>
+            </View>
+          </TouchableOpacity>
+        </ThemedView>
       </ScrollView>
     </ThemedView>
   );

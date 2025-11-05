@@ -34,6 +34,7 @@ const MAPPING = {
   'tricount': 'account-balance-wallet',
   'menu': 'menu',
   'person.fill': 'person',
+  'person.2.fill': 'group',
   'envelope.fill': 'email',
   'lock.fill': 'lock',
 } as IconMapping;

@@ -64,7 +64,7 @@ export function TravelDetailContent({ travel, onFeaturesPress }: TravelDetailCon
             <View style={styles.featuresButtonTextContainer}>
               <ThemedText style={styles.featuresButtonTitle}>Funzionalità</ThemedText>
               <ThemedText style={styles.featuresButtonSubtitle}>
-                Checklist, Documenti e Tricount
+                Checklist, Documenti, Tricount e Membri
               </ThemedText>
             </View>
             <IconSymbol name="chevron.right" size={24} color="#fff" />
