@@ -34,6 +34,12 @@ export default function RootLayout() {
                 title: 'Dettaglio viaggio',
               }} 
             />
+            <Stack.Screen 
+              name="travel-features" 
+              options={{ 
+                title: 'Funzionalità',
+              }} 
+            />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>

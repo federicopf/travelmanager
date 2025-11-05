@@ -29,6 +29,10 @@ const MAPPING = {
   'plus.circle.fill': 'add-circle',
   'edit': 'edit',
   'trash.fill': 'delete',
+  'checklist': 'assignment',
+  'documents': 'folder',
+  'tricount': 'account-balance-wallet',
+  'menu': 'menu',
 } as IconMapping;
 
 /**

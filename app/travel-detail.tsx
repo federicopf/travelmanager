@@ -181,11 +181,10 @@ export default function TravelDetailScreen() {
 
         {/* Details Section */}
         <ThemedView style={styles.section}>
-          <ThemedText type="title" style={styles.title}>
-            {travel.title}
-          </ThemedText>
-
-          <View style={styles.statusContainer}>
+          <View style={styles.titleRow}>
+            <ThemedText type="title" style={styles.title}>
+              {travel.title}
+            </ThemedText>
             <View
               style={[
                 styles.statusBadge,
@@ -218,25 +217,24 @@ export default function TravelDetailScreen() {
           )}
         </ThemedView>
 
-        {/* Action Buttons */}
+        {/* Features Button */}
         <ThemedView style={styles.section}>
           <TouchableOpacity
-            style={[styles.button, styles.editButton]}
-            onPress={handleEdit}
-            activeOpacity={0.7}>
-            <IconSymbol name="edit" size={20} color="#fff" />
-            <ThemedText style={styles.buttonText}>Modifica</ThemedText>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, styles.deleteButton]}
-            onPress={handleDelete}
-            activeOpacity={0.7}
-            disabled={deleting}>
-            <IconSymbol name="trash.fill" size={20} color="#fff" />
-            <ThemedText style={styles.buttonText}>
-              {deleting ? 'Eliminazione...' : 'Elimina'}
-            </ThemedText>
+            style={styles.featuresButton}
+            onPress={() => router.push(`/travel-features?id=${travel.id}`)}
+            activeOpacity={0.8}>
+            <View style={styles.featuresButtonContent}>
+              <View style={styles.featuresIconContainer}>
+                <IconSymbol name="menu" size={28} color="#fff" />
+              </View>
+              <View style={styles.featuresButtonTextContainer}>
+                <ThemedText style={styles.featuresButtonTitle}>Funzionalità</ThemedText>
+                <ThemedText style={styles.featuresButtonSubtitle}>
+                  Checklist, Documenti e Tricount
+                </ThemedText>
+              </View>
+              <IconSymbol name="chevron.right" size={24} color="#fff" />
+            </View>
           </TouchableOpacity>
         </ThemedView>
       </ScrollView>
@@ -271,19 +269,25 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     letterSpacing: -0.5,
-    marginBottom: 12,
+    flex: 1,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 20,
+    flexWrap: 'wrap',
   },
   statusContainer: {
     marginBottom: 20,
   },
   statusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -316,25 +320,42 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
-  button: {
+  featuresButton: {
+    backgroundColor: '#0a7ea4',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#0a7ea4',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  featuresButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 16,
+  },
+  featuresIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
-    gap: 8,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    alignItems: 'center',
   },
-  editButton: {
-    backgroundColor: '#0a7ea4',
+  featuresButtonTextContainer: {
+    flex: 1,
+    gap: 4,
   },
-  deleteButton: {
-    backgroundColor: '#dc3545',
-  },
-  buttonText: {
+  featuresButtonTitle: {
+    fontSize: 20,
+    fontWeight: '700',
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  },
+  featuresButtonSubtitle: {
+    fontSize: 14,
+    color: '#fff',
+    opacity: 0.9,
   },
 });
 
