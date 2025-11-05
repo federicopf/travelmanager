@@ -78,3 +78,29 @@ export async function getCoordinatesFromPlace(
   };
 }
 
+/**
+ * Get Mapbox access token from Supabase Edge Function
+ * @returns Mapbox access token
+ */
+export async function getMapboxToken(): Promise<string> {
+  try {
+    const { supabase } = await import('@/lib/supabase');
+    
+    const { data, error } = await supabase.functions.invoke('mapbox-token');
+
+    if (error) {
+      console.error('❌ Supabase function error:', error);
+      throw new Error(error.message || 'Errore nel recupero del token Mapbox');
+    }
+
+    if (!data || !data.token) {
+      throw new Error('Token Mapbox non disponibile');
+    }
+
+    return data.token;
+  } catch (error) {
+    console.error('❌ Error getting Mapbox token:', error);
+    throw error;
+  }
+}
+
