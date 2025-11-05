@@ -25,6 +25,7 @@ export default function TabLayout() {
         name="home"
         options={{
           title: 'Home',
+          headerShown: true,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
@@ -32,6 +33,7 @@ export default function TabLayout() {
         name="travels"
         options={{
           title: 'Viaggi',
+          headerShown: true,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="airplane" color={color} />,
         }}
       />
@@ -39,6 +41,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: 'Impostazioni',
+          headerShown: true,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="gear" color={color} />,
         }}
       />

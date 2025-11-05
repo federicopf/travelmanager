@@ -1,12 +1,20 @@
+import { useLayoutEffect } from 'react';
 import { Alert, StyleSheet, TouchableOpacity } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/context/auth-context';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
+  const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: 'Impostazioni',
+    });
+  }, [navigation]);
 
   const handleLogout = () => {
     Alert.alert(
@@ -35,10 +43,6 @@ export default function SettingsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedView style={styles.header}>
-        <ThemedText type="title">Impostazioni</ThemedText>
-      </ThemedView>
-      
       <ThemedView style={styles.content}>
         {user && (
           <ThemedView style={styles.section}>
@@ -58,10 +62,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    padding: 16,
-    paddingTop: 60,
   },
   content: {
     flex: 1,
