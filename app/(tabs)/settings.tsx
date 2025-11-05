@@ -7,7 +7,7 @@ import { useAuth } from '@/context/auth-context';
 import { router, useNavigation } from 'expo-router';
 
 export default function SettingsScreen() {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigation = useNavigation();
 
   useLayoutEffect(() => {
@@ -18,7 +18,7 @@ export default function SettingsScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
+      'Esci',
       'Sei sicuro di voler uscire?',
       [
         {
@@ -46,6 +46,12 @@ export default function SettingsScreen() {
       <ThemedView style={styles.content}>
         {user && (
           <ThemedView style={styles.section}>
+            {profile && (
+              <>
+                <ThemedText style={styles.label}>Username</ThemedText>
+                <ThemedText style={styles.value}>{profile.username}</ThemedText>
+              </>
+            )}
             <ThemedText style={styles.label}>Email</ThemedText>
             <ThemedText style={styles.value}>{user.email}</ThemedText>
           </ThemedView>
@@ -69,7 +75,7 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   section: {
-    gap: 8,
+    gap: 16,
   },
   label: {
     fontSize: 14,

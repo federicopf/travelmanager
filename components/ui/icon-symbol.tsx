@@ -33,6 +33,9 @@ const MAPPING = {
   'documents': 'folder',
   'tricount': 'account-balance-wallet',
   'menu': 'menu',
+  'person.fill': 'person',
+  'envelope.fill': 'email',
+  'lock.fill': 'lock',
 } as IconMapping;
 
 /**

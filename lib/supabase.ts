@@ -5,7 +5,7 @@ const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || process.env.EXPO
 const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please check your .env or app.json configuration.');
+  throw new Error('Variabili di ambiente Supabase mancanti. Controlla la configurazione in .env o app.json.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
