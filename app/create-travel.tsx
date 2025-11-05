@@ -1,8 +1,6 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -14,9 +12,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { DatePickerInput } from '@/components/date-picker-input';
+import { PlaceSearchInput } from '@/components/place-search-input';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/auth-context';
 import { MapboxPlace, searchPlaces } from '@/lib/mapbox';
 import { createTravel } from '@/lib/travels';
@@ -49,6 +48,13 @@ export default function CreateTravelScreen() {
       return;
     }
 
+    // Non fare la ricerca se il testo corrisponde al posto selezionato
+    if (selectedPlace && destinationSearch.trim() === selectedPlace.address.trim()) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
     // Cancella il timeout precedente se l'utente sta ancora scrivendo
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -58,6 +64,14 @@ export default function CreateTravelScreen() {
     searchTimeoutRef.current = setTimeout(async () => {
       // Solo se il testo è ancora abbastanza lungo (potrebbe essere cambiato durante l'attesa)
       if (destinationSearch.trim().length < 3) {
+        setSearchResults([]);
+        setShowResults(false);
+        setSearching(false);
+        return;
+      }
+
+      // Non fare la ricerca se corrisponde al posto selezionato
+      if (selectedPlace && destinationSearch.trim() === selectedPlace.address.trim()) {
         setSearchResults([]);
         setShowResults(false);
         setSearching(false);
@@ -86,13 +100,21 @@ export default function CreateTravelScreen() {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [destinationSearch]);
+  }, [destinationSearch, selectedPlace]);
 
   const handleSelectPlace = (place: MapboxPlace) => {
+    // Cancella il timeout di ricerca se c'è uno in corso
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+    
     setSelectedPlace(place);
     setDestination(place.address);
     setDestinationSearch(place.address);
     setShowResults(false);
+    setSearchResults([]);
+    setSearching(false);
   };
 
   const handleSubmit = async () => {
@@ -179,53 +201,20 @@ export default function CreateTravelScreen() {
 
           <View style={styles.inputContainer}>
             <ThemedText style={styles.label}>Destinazione *</ThemedText>
-            <View style={styles.searchContainer}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Cerca un luogo (es. Roma, Italia)"
-                placeholderTextColor="#999"
-                value={destinationSearch}
-                onChangeText={setDestinationSearch}
-                onFocus={() => {
-                  if (searchResults.length > 0) {
-                    setShowResults(true);
-                  }
-                }}
-              />
-              {searching && (
-                <ActivityIndicator size="small" color="#0a7ea4" style={styles.searchLoader} />
-              )}
-            </View>
-            {showResults && searchResults.length > 0 && (
-              <View style={styles.resultsContainer}>
-                {searchResults.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.resultItem}
-                    onPress={() => handleSelectPlace(item)}>
-                    <IconSymbol name="location.fill" size={16} color="#0a7ea4" />
-                    <View style={styles.resultContent}>
-                      <ThemedText style={styles.resultText} numberOfLines={1}>
-                        {item.name}
-                      </ThemedText>
-                      {item.context && (
-                        <ThemedText style={styles.resultContext} numberOfLines={1}>
-                          {item.context}
-                        </ThemedText>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-            {selectedPlace && (
-              <View style={styles.selectedPlace}>
-                <IconSymbol name="checkmark.circle.fill" size={16} color="#4CAF50" />
-                <ThemedText style={styles.selectedPlaceText}>
-                  {selectedPlace.address}
-                </ThemedText>
-              </View>
-            )}
+            <PlaceSearchInput
+              value={destinationSearch}
+              onChangeText={setDestinationSearch}
+              onSelectPlace={handleSelectPlace}
+              onFocus={() => {
+                if (searchResults.length > 0) {
+                  setShowResults(true);
+                }
+              }}
+              searching={searching}
+              results={searchResults}
+              showResults={showResults}
+              selectedPlace={selectedPlace}
+            />
           </View>
 
           <View style={styles.inputContainer}>
@@ -243,104 +232,26 @@ export default function CreateTravelScreen() {
           </View>
 
           <View style={styles.dateRow}>
-            <View style={styles.dateInput}>
-              <ThemedText style={styles.label}>Data inizio *</ThemedText>
-              <TouchableOpacity
-                style={styles.dateButton}
-                onPress={() => {
-                  setTempStartDate(startDate);
-                  setShowStartPicker(true);
-                }}>
-                <ThemedText style={styles.dateButtonText}>
-                  {startDate.toLocaleDateString('it-IT', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                  })}
-                </ThemedText>
-                <IconSymbol name="calendar" size={20} color="#0a7ea4" />
-              </TouchableOpacity>
-              {showStartPicker && (
-                <DateTimePicker
-                  value={tempStartDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(event, selectedDate) => {
-                    if (Platform.OS === 'android') {
-                      setShowStartPicker(false);
-                      if (event.type === 'set' && selectedDate) {
-                        setStartDate(selectedDate);
-                      }
-                    } else if (Platform.OS === 'ios' && selectedDate) {
-                      // Su iOS, aggiorna la data temporanea mentre l'utente scrolla
-                      setTempStartDate(selectedDate);
-                    }
-                  }}
-                  minimumDate={new Date()}
-                />
-              )}
-              {Platform.OS === 'ios' && showStartPicker && (
-                <View style={styles.pickerActions}>
-                  <TouchableOpacity
-                    style={styles.pickerButton}
-                    onPress={() => {
-                      setStartDate(tempStartDate);
-                      setShowStartPicker(false);
-                    }}>
-                    <ThemedText style={styles.pickerButtonText}>Conferma</ThemedText>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-            <View style={styles.dateInput}>
-              <ThemedText style={styles.label}>Data fine *</ThemedText>
-              <TouchableOpacity
-                style={styles.dateButton}
-                onPress={() => {
-                  setTempEndDate(endDate);
-                  setShowEndPicker(true);
-                }}>
-                <ThemedText style={styles.dateButtonText}>
-                  {endDate.toLocaleDateString('it-IT', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                  })}
-                </ThemedText>
-                <IconSymbol name="calendar" size={20} color="#0a7ea4" />
-              </TouchableOpacity>
-              {showEndPicker && (
-                <DateTimePicker
-                  value={tempEndDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(event, selectedDate) => {
-                    if (Platform.OS === 'android') {
-                      setShowEndPicker(false);
-                      if (event.type === 'set' && selectedDate) {
-                        setEndDate(selectedDate);
-                      }
-                    } else if (Platform.OS === 'ios' && selectedDate) {
-                      // Su iOS, aggiorna la data temporanea mentre l'utente scrolla
-                      setTempEndDate(selectedDate);
-                    }
-                  }}
-                  minimumDate={startDate}
-                />
-              )}
-              {Platform.OS === 'ios' && showEndPicker && (
-                <View style={styles.pickerActions}>
-                  <TouchableOpacity
-                    style={styles.pickerButton}
-                    onPress={() => {
-                      setEndDate(tempEndDate);
-                      setShowEndPicker(false);
-                    }}>
-                    <ThemedText style={styles.pickerButtonText}>Conferma</ThemedText>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
+            <DatePickerInput
+              label="Data inizio *"
+              value={startDate}
+              onChange={setStartDate}
+              minimumDate={new Date()}
+              tempValue={tempStartDate}
+              setTempValue={setTempStartDate}
+              showPicker={showStartPicker}
+              setShowPicker={setShowStartPicker}
+            />
+            <DatePickerInput
+              label="Data fine *"
+              value={endDate}
+              onChange={setEndDate}
+              minimumDate={startDate}
+              tempValue={tempEndDate}
+              setTempValue={setTempEndDate}
+              showPicker={showEndPicker}
+              setShowPicker={setShowEndPicker}
+            />
           </View>
 
           <TouchableOpacity
@@ -400,98 +311,9 @@ const styles = StyleSheet.create({
     minHeight: 100,
     paddingTop: 16,
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    position: 'relative',
-  },
-  searchInput: {
-    flex: 1,
-    padding: 16,
-    fontSize: 16,
-  },
-  searchLoader: {
-    position: 'absolute',
-    right: 16,
-  },
-  resultsContainer: {
-    maxHeight: 200,
-    borderWidth: 1,
-    borderRadius: 8,
-    marginTop: 4,
-    overflow: 'hidden',
-  },
-  resultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    gap: 8,
-    borderBottomWidth: 1,
-  },
-  resultContent: {
-    flex: 1,
-    gap: 2,
-  },
-  resultText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  resultContext: {
-    fontSize: 12,
-    opacity: 0.6,
-  },
-  selectedPlace: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#4CAF50',
-  },
-  selectedPlaceText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#4CAF50',
-  },
   dateRow: {
     flexDirection: 'row',
     gap: 12,
-  },
-  dateInput: {
-    flex: 1,
-    gap: 8,
-  },
-  dateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 16,
-  },
-  dateButtonText: {
-    fontSize: 16,
-  },
-  pickerActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingTop: 8,
-  },
-  pickerButton: {
-    backgroundColor: '#0a7ea4',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  pickerButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
   },
   button: {
     backgroundColor: '#0a7ea4',
