@@ -2,15 +2,16 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -20,6 +21,7 @@ import { createTravel } from '@/lib/travels';
 
 export default function CreateTravelScreen() {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [destination, setDestination] = useState('');
@@ -86,11 +88,16 @@ export default function CreateTravelScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <ThemedView style={styles.form}>
+    <ThemedView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          <ThemedView style={styles.form}>
           <ThemedText type="title" style={styles.title}>
             Crea nuovo viaggio
           </ThemedText>
@@ -246,14 +253,18 @@ export default function CreateTravelScreen() {
             onPress={() => router.back()}>
             <ThemedText style={styles.cancelText}>Annulla</ThemedText>
           </TouchableOpacity>
-        </ThemedView>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </ThemedView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  keyboardView: {
     flex: 1,
   },
   scrollContent: {
