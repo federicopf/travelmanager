@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -17,7 +17,7 @@ import { PlaceSearchInput } from '@/components/place-search-input';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/context/auth-context';
-import { MapboxPlace, searchPlaces } from '@/lib/mapbox';
+import { usePlaceSearch } from '@/hooks/use-place-search';
 import { createTravel } from '@/lib/travels';
 
 export default function CreateTravelScreen() {
@@ -34,87 +34,26 @@ export default function CreateTravelScreen() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [searching, setSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<MapboxPlace[]>([]);
-  const [selectedPlace, setSelectedPlace] = useState<MapboxPlace | null>(null);
-  const [showResults, setShowResults] = useState(false);
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    // Reset results quando il testo è troppo corto
-    if (destinationSearch.trim().length < 3) {
-      setSearchResults([]);
-      setShowResults(false);
-      return;
-    }
+  const {
+    searching,
+    searchResults,
+    selectedPlace,
+    showResults,
+    performSearch,
+    handleSelectPlace,
+    setShowResults,
+  } = usePlaceSearch();
 
-    // Non fare la ricerca se il testo corrisponde al posto selezionato
-    if (selectedPlace && destinationSearch.trim() === selectedPlace.address.trim()) {
-      setSearchResults([]);
-      setShowResults(false);
-      return;
-    }
+  const handleDestinationChange = (text: string) => {
+    setDestinationSearch(text);
+    performSearch(text);
+  };
 
-    // Cancella il timeout precedente se l'utente sta ancora scrivendo
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    // Imposta un nuovo timeout - aspetta che l'utente smetta di scrivere
-    searchTimeoutRef.current = setTimeout(async () => {
-      // Solo se il testo è ancora abbastanza lungo (potrebbe essere cambiato durante l'attesa)
-      if (destinationSearch.trim().length < 3) {
-        setSearchResults([]);
-        setShowResults(false);
-        setSearching(false);
-        return;
-      }
-
-      // Non fare la ricerca se corrisponde al posto selezionato
-      if (selectedPlace && destinationSearch.trim() === selectedPlace.address.trim()) {
-        setSearchResults([]);
-        setShowResults(false);
-        setSearching(false);
-        return;
-      }
-
-      setSearching(true);
-      try {
-        console.log('🔍 Starting search for:', destinationSearch);
-        const results = await searchPlaces(destinationSearch, 5);
-        console.log('✅ Search results:', results);
-        setSearchResults(results);
-        setShowResults(true);
-      } catch (error) {
-        console.error('❌ Error searching places:', error);
-        Alert.alert('Errore', error instanceof Error ? error.message : 'Errore nella ricerca luoghi');
-        setSearchResults([]);
-      } finally {
-        setSearching(false);
-      }
-    }, 800); // Debounce di 800ms - aspetta che l'utente finisca di scrivere
-
-    // Cleanup function
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [destinationSearch, selectedPlace]);
-
-  const handleSelectPlace = (place: MapboxPlace) => {
-    // Cancella il timeout di ricerca se c'è uno in corso
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-      searchTimeoutRef.current = null;
-    }
-    
-    setSelectedPlace(place);
-    setDestination(place.address);
-    setDestinationSearch(place.address);
-    setShowResults(false);
-    setSearchResults([]);
-    setSearching(false);
+  const handlePlaceSelect = (place: any) => {
+    const address = handleSelectPlace(place);
+    setDestination(address);
+    setDestinationSearch(address);
   };
 
   const handleSubmit = async () => {
@@ -203,8 +142,8 @@ export default function CreateTravelScreen() {
             <ThemedText style={styles.label}>Destinazione</ThemedText>
             <PlaceSearchInput
               value={destinationSearch}
-              onChangeText={setDestinationSearch}
-              onSelectPlace={handleSelectPlace}
+              onChangeText={handleDestinationChange}
+              onSelectPlace={handlePlaceSelect}
               onFocus={() => {
                 if (searchResults.length > 0) {
                   setShowResults(true);
