@@ -32,9 +32,10 @@ const styles = StyleSheet.create({
   container: {
     maxHeight: 200,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     marginTop: 4,
     overflow: 'hidden',
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   scrollView: {
     maxHeight: 200,

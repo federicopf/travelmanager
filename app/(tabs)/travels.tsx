@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -12,6 +13,7 @@ import { getTravels } from '@/lib/travels';
 
 export default function TravelsScreen() {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [travels, setTravels] = useState<Travel[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,8 +54,8 @@ export default function TravelsScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.container}>
-        <ThemedView style={styles.header}>
-          <ThemedText type="title">I miei viaggi</ThemedText>
+        <ThemedView style={[styles.header, { paddingTop: insets.top + 16 }]}>
+          <ThemedText type="title" style={styles.title}>I miei viaggi</ThemedText>
         </ThemedView>
         <ThemedView style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0a7ea4" />
@@ -64,14 +66,14 @@ export default function TravelsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedView style={styles.header}>
-        <ThemedText type="title">I miei viaggi</ThemedText>
+      <ThemedView style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <ThemedText type="title" style={styles.title}>I miei viaggi</ThemedText>
         <TouchableOpacity
           style={styles.createButton}
           onPress={handleCreateTravel}
           activeOpacity={0.7}>
-          <IconSymbol name="plus.circle.fill" size={28} color="#0a7ea4" />
-          <ThemedText style={styles.createButtonText}>Nuovo viaggio</ThemedText>
+          <IconSymbol name="plus.circle.fill" size={24} color="#fff" />
+          <ThemedText style={styles.createButtonText}>Nuovo</ThemedText>
         </TouchableOpacity>
       </ThemedView>
       <TravelList travels={travels} onTravelPress={handleTravelPress} />
@@ -84,23 +86,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: 16,
-    paddingTop: 60,
-    gap: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#0a7ea4',
+    gap: 6,
+    backgroundColor: '#0a7ea4',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
   },
   createButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#0a7ea4',
+    color: '#fff',
   },
   loadingContainer: {
     flex: 1,
@@ -108,4 +117,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-

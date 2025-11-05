@@ -42,7 +42,8 @@ export function TravelList({ travels, onTravelPress }: TravelListProps) {
 
 const styles = StyleSheet.create({
   list: {
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingTop: 8,
   },
   emptyContainer: {
     flex: 1,
@@ -52,7 +53,8 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    opacity: 0.6,
+    opacity: 0.5,
+    fontWeight: '500',
   },
 });
 

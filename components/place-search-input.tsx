@@ -57,14 +57,15 @@ export function PlaceSearchInput({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 8,
+    gap: 10,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     position: 'relative',
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   input: {
     flex: 1,
@@ -80,8 +81,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
+    borderRadius: 10,
+    marginTop: 4,
+    backgroundColor: '#4CAF5020',
     borderWidth: 1,
     borderColor: '#4CAF50',
   },
@@ -89,6 +91,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: '#4CAF50',
+    fontWeight: '500',
   },
 });
 

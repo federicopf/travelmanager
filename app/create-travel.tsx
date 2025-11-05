@@ -185,11 +185,11 @@ export default function CreateTravelScreen() {
           showsVerticalScrollIndicator={false}>
           <ThemedView style={styles.form}>
           <ThemedText type="title" style={styles.title}>
-            Crea nuovo viaggio
+            Nuovo viaggio
           </ThemedText>
 
           <View style={styles.inputContainer}>
-            <ThemedText style={styles.label}>Titolo *</ThemedText>
+            <ThemedText style={styles.label}>Titolo</ThemedText>
             <TextInput
               style={styles.input}
               placeholder="Es. Vacanza a Parigi"
@@ -200,7 +200,7 @@ export default function CreateTravelScreen() {
           </View>
 
           <View style={styles.inputContainer}>
-            <ThemedText style={styles.label}>Destinazione *</ThemedText>
+            <ThemedText style={styles.label}>Destinazione</ThemedText>
             <PlaceSearchInput
               value={destinationSearch}
               onChangeText={setDestinationSearch}
@@ -233,7 +233,7 @@ export default function CreateTravelScreen() {
 
           <View style={styles.dateRow}>
             <DatePickerInput
-              label="Data inizio *"
+              label="Data inizio"
               value={startDate}
               onChange={setStartDate}
               minimumDate={new Date()}
@@ -243,7 +243,7 @@ export default function CreateTravelScreen() {
               setShowPicker={setShowStartPicker}
             />
             <DatePickerInput
-              label="Data fine *"
+              label="Data fine"
               value={endDate}
               onChange={setEndDate}
               minimumDate={startDate}
@@ -261,12 +261,6 @@ export default function CreateTravelScreen() {
             <ThemedText style={styles.buttonText}>
               {loading ? 'Creazione...' : 'Crea viaggio'}
             </ThemedText>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => router.back()}>
-            <ThemedText style={styles.cancelText}>Annulla</ThemedText>
           </TouchableOpacity>
           </ThemedView>
         </ScrollView>
@@ -287,25 +281,31 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   form: {
-    gap: 16,
+    gap: 24,
   },
   title: {
-    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: -0.5,
     marginBottom: 8,
   },
   inputContainer: {
-    gap: 8,
+    gap: 10,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    opacity: 0.7,
+    marginBottom: 2,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     fontSize: 16,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   textArea: {
     minHeight: 100,
@@ -317,10 +317,15 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#0a7ea4',
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: 12,
+    padding: 18,
     alignItems: 'center',
     marginTop: 8,
+    shadowColor: '#0a7ea4',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -329,15 +334,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  cancelButton: {
-    marginTop: 8,
-    padding: 16,
-    alignItems: 'center',
-  },
-  cancelText: {
-    fontSize: 16,
-    opacity: 0.7,
+    letterSpacing: 0.3,
   },
 });
 

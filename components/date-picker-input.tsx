@@ -81,21 +81,25 @@ export function DatePickerInput({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    gap: 8,
+    gap: 10,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    opacity: 0.7,
+    marginBottom: 2,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     fontSize: 16,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   buttonText: {
     fontSize: 16,
@@ -107,9 +111,9 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: '#0a7ea4',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   confirmButtonText: {
     color: '#fff',
