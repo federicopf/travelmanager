@@ -1,7 +1,8 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -17,6 +18,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/auth-context';
+import { MapboxPlace, searchPlaces } from '@/lib/mapbox';
 import { createTravel } from '@/lib/travels';
 
 export default function CreateTravelScreen() {
@@ -25,6 +27,7 @@ export default function CreateTravelScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [destination, setDestination] = useState('');
+  const [destinationSearch, setDestinationSearch] = useState('');
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [tempStartDate, setTempStartDate] = useState<Date>(new Date());
@@ -32,6 +35,65 @@ export default function CreateTravelScreen() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<MapboxPlace[]>([]);
+  const [selectedPlace, setSelectedPlace] = useState<MapboxPlace | null>(null);
+  const [showResults, setShowResults] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    // Reset results quando il testo è troppo corto
+    if (destinationSearch.trim().length < 3) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    // Cancella il timeout precedente se l'utente sta ancora scrivendo
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Imposta un nuovo timeout - aspetta che l'utente smetta di scrivere
+    searchTimeoutRef.current = setTimeout(async () => {
+      // Solo se il testo è ancora abbastanza lungo (potrebbe essere cambiato durante l'attesa)
+      if (destinationSearch.trim().length < 3) {
+        setSearchResults([]);
+        setShowResults(false);
+        setSearching(false);
+        return;
+      }
+
+      setSearching(true);
+      try {
+        console.log('🔍 Starting search for:', destinationSearch);
+        const results = await searchPlaces(destinationSearch, 5);
+        console.log('✅ Search results:', results);
+        setSearchResults(results);
+        setShowResults(true);
+      } catch (error) {
+        console.error('❌ Error searching places:', error);
+        Alert.alert('Errore', error instanceof Error ? error.message : 'Errore nella ricerca luoghi');
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 800); // Debounce di 800ms - aspetta che l'utente finisca di scrivere
+
+    // Cleanup function
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [destinationSearch]);
+
+  const handleSelectPlace = (place: MapboxPlace) => {
+    setSelectedPlace(place);
+    setDestination(place.address);
+    setDestinationSearch(place.address);
+    setShowResults(false);
+  };
 
   const handleSubmit = async () => {
     if (!user) {
@@ -72,6 +134,8 @@ export default function CreateTravelScreen() {
         startDate: formatDate(startDate),
         endDate: formatDate(endDate),
         status: 'planned',
+        latitude: selectedPlace ? selectedPlace.latitude : undefined,
+        longitude: selectedPlace ? selectedPlace.longitude : undefined,
       });
 
       Alert.alert('Successo', 'Viaggio creato con successo!', [
@@ -115,13 +179,53 @@ export default function CreateTravelScreen() {
 
           <View style={styles.inputContainer}>
             <ThemedText style={styles.label}>Destinazione *</ThemedText>
-            <TextInput
-              style={styles.input}
-              placeholder="Es. Roma, Italia"
-              placeholderTextColor="#999"
-              value={destination}
-              onChangeText={setDestination}
-            />
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Cerca un luogo (es. Roma, Italia)"
+                placeholderTextColor="#999"
+                value={destinationSearch}
+                onChangeText={setDestinationSearch}
+                onFocus={() => {
+                  if (searchResults.length > 0) {
+                    setShowResults(true);
+                  }
+                }}
+              />
+              {searching && (
+                <ActivityIndicator size="small" color="#0a7ea4" style={styles.searchLoader} />
+              )}
+            </View>
+            {showResults && searchResults.length > 0 && (
+              <View style={styles.resultsContainer}>
+                {searchResults.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.resultItem}
+                    onPress={() => handleSelectPlace(item)}>
+                    <IconSymbol name="location.fill" size={16} color="#0a7ea4" />
+                    <View style={styles.resultContent}>
+                      <ThemedText style={styles.resultText} numberOfLines={1}>
+                        {item.name}
+                      </ThemedText>
+                      {item.context && (
+                        <ThemedText style={styles.resultContext} numberOfLines={1}>
+                          {item.context}
+                        </ThemedText>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            {selectedPlace && (
+              <View style={styles.selectedPlace}>
+                <IconSymbol name="checkmark.circle.fill" size={16} color="#4CAF50" />
+                <ThemedText style={styles.selectedPlaceText}>
+                  {selectedPlace.address}
+                </ThemedText>
+              </View>
+            )}
           </View>
 
           <View style={styles.inputContainer}>
@@ -295,6 +399,63 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 100,
     paddingTop: 16,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 8,
+    position: 'relative',
+  },
+  searchInput: {
+    flex: 1,
+    padding: 16,
+    fontSize: 16,
+  },
+  searchLoader: {
+    position: 'absolute',
+    right: 16,
+  },
+  resultsContainer: {
+    maxHeight: 200,
+    borderWidth: 1,
+    borderRadius: 8,
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  resultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 8,
+    borderBottomWidth: 1,
+  },
+  resultContent: {
+    flex: 1,
+    gap: 2,
+  },
+  resultText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  resultContext: {
+    fontSize: 12,
+    opacity: 0.6,
+  },
+  selectedPlace: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  selectedPlaceText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#4CAF50',
   },
   dateRow: {
     flexDirection: 'row',
