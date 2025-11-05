@@ -14,7 +14,7 @@ export default function TravelFeaturesScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: 'Gestisci viaggio',
+      title: 'Risorse viaggio',
     });
   }, [navigation]);
 

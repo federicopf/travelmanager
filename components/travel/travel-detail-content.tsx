@@ -62,7 +62,7 @@ export function TravelDetailContent({ travel, onFeaturesPress }: TravelDetailCon
               <IconSymbol name="menu" size={28} color="#fff" />
             </View>
             <View style={styles.featuresButtonTextContainer}>
-              <ThemedText style={styles.featuresButtonTitle}>Gestisci viaggio</ThemedText>
+              <ThemedText style={styles.featuresButtonTitle}>Risorse viaggio</ThemedText>
             </View>
             <IconSymbol name="chevron.right" size={24} color="#fff" />
           </View>

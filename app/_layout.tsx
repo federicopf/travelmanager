@@ -37,7 +37,7 @@ export default function RootLayout() {
             <Stack.Screen 
               name="travel-features" 
               options={{ 
-                title: 'Gestisci viaggio',
+                title: 'Risorse viaggio',
               }} 
             />
           </Stack>

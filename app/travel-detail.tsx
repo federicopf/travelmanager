@@ -78,12 +78,7 @@ export default function TravelDetailScreen() {
             try {
               setDeleting(true);
               await deleteTravel(travel.id);
-              Alert.alert('Successo', 'Viaggio eliminato con successo', [
-                {
-                  text: 'OK',
-                  onPress: () => router.back(),
-                },
-              ]);
+              router.push('/(tabs)/home');
             } catch (error: any) {
               console.error('Error deleting travel:', error);
               Alert.alert('Errore', error.message || 'Errore durante l\'eliminazione del viaggio');
