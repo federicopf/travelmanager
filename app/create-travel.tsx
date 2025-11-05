@@ -1,3 +1,4 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -10,7 +11,6 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -25,6 +25,8 @@ export default function CreateTravelScreen() {
   const [destination, setDestination] = useState('');
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(new Date());
+  const [tempStartDate, setTempStartDate] = useState<Date>(new Date());
+  const [tempEndDate, setTempEndDate] = useState<Date>(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -134,7 +136,10 @@ export default function CreateTravelScreen() {
               <ThemedText style={styles.label}>Data inizio *</ThemedText>
               <TouchableOpacity
                 style={styles.dateButton}
-                onPress={() => setShowStartPicker(true)}>
+                onPress={() => {
+                  setTempStartDate(startDate);
+                  setShowStartPicker(true);
+                }}>
                 <ThemedText style={styles.dateButtonText}>
                   {startDate.toLocaleDateString('it-IT', {
                     year: 'numeric',
@@ -146,18 +151,18 @@ export default function CreateTravelScreen() {
               </TouchableOpacity>
               {showStartPicker && (
                 <DateTimePicker
-                  value={startDate}
+                  value={tempStartDate}
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   onChange={(event, selectedDate) => {
                     if (Platform.OS === 'android') {
                       setShowStartPicker(false);
-                    }
-                    if (event.type === 'set' && selectedDate) {
-                      setStartDate(selectedDate);
-                    }
-                    if (Platform.OS === 'android' || (Platform.OS === 'ios' && event.type === 'dismissed')) {
-                      setShowStartPicker(false);
+                      if (event.type === 'set' && selectedDate) {
+                        setStartDate(selectedDate);
+                      }
+                    } else if (Platform.OS === 'ios' && selectedDate) {
+                      // Su iOS, aggiorna la data temporanea mentre l'utente scrolla
+                      setTempStartDate(selectedDate);
                     }
                   }}
                   minimumDate={new Date()}
@@ -167,7 +172,10 @@ export default function CreateTravelScreen() {
                 <View style={styles.pickerActions}>
                   <TouchableOpacity
                     style={styles.pickerButton}
-                    onPress={() => setShowStartPicker(false)}>
+                    onPress={() => {
+                      setStartDate(tempStartDate);
+                      setShowStartPicker(false);
+                    }}>
                     <ThemedText style={styles.pickerButtonText}>Conferma</ThemedText>
                   </TouchableOpacity>
                 </View>
@@ -177,7 +185,10 @@ export default function CreateTravelScreen() {
               <ThemedText style={styles.label}>Data fine *</ThemedText>
               <TouchableOpacity
                 style={styles.dateButton}
-                onPress={() => setShowEndPicker(true)}>
+                onPress={() => {
+                  setTempEndDate(endDate);
+                  setShowEndPicker(true);
+                }}>
                 <ThemedText style={styles.dateButtonText}>
                   {endDate.toLocaleDateString('it-IT', {
                     year: 'numeric',
@@ -189,18 +200,18 @@ export default function CreateTravelScreen() {
               </TouchableOpacity>
               {showEndPicker && (
                 <DateTimePicker
-                  value={endDate}
+                  value={tempEndDate}
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   onChange={(event, selectedDate) => {
                     if (Platform.OS === 'android') {
                       setShowEndPicker(false);
-                    }
-                    if (event.type === 'set' && selectedDate) {
-                      setEndDate(selectedDate);
-                    }
-                    if (Platform.OS === 'android' || (Platform.OS === 'ios' && event.type === 'dismissed')) {
-                      setShowEndPicker(false);
+                      if (event.type === 'set' && selectedDate) {
+                        setEndDate(selectedDate);
+                      }
+                    } else if (Platform.OS === 'ios' && selectedDate) {
+                      // Su iOS, aggiorna la data temporanea mentre l'utente scrolla
+                      setTempEndDate(selectedDate);
                     }
                   }}
                   minimumDate={startDate}
@@ -210,7 +221,10 @@ export default function CreateTravelScreen() {
                 <View style={styles.pickerActions}>
                   <TouchableOpacity
                     style={styles.pickerButton}
-                    onPress={() => setShowEndPicker(false)}>
+                    onPress={() => {
+                      setEndDate(tempEndDate);
+                      setShowEndPicker(false);
+                    }}>
                     <ThemedText style={styles.pickerButtonText}>Conferma</ThemedText>
                   </TouchableOpacity>
                 </View>
@@ -290,6 +304,22 @@ const styles = StyleSheet.create({
   },
   dateButtonText: {
     fontSize: 16,
+  },
+  pickerActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingTop: 8,
+  },
+  pickerButton: {
+    backgroundColor: '#0a7ea4',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  pickerButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   button: {
     backgroundColor: '#0a7ea4',
