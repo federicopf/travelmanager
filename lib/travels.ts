@@ -2,6 +2,48 @@ import { Travel } from '@/constants/types';
 import { supabase } from './supabase';
 
 /**
+ * Calculate travel status based on dates
+ * - completed: if end date has passed
+ * - ongoing: if start date has passed or is today and end date hasn't passed
+ * - planned: if start date is in the future
+ */
+function calculateStatus(startDate: string, endDate: string): 'planned' | 'ongoing' | 'completed' {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to compare dates only
+  
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+  
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+
+  if (end < today) {
+    return 'completed';
+  }
+  
+  if (start <= today && end >= today) {
+    return 'ongoing';
+  }
+  
+  return 'planned';
+}
+
+/**
+ * Update travel status in database if it needs to be changed based on dates
+ */
+async function updateStatusIfNeeded(travelId: string, startDate: string, endDate: string, currentStatus: string): Promise<void> {
+  const calculatedStatus = calculateStatus(startDate, endDate);
+  
+  // Only update if the calculated status differs from current status
+  if (calculatedStatus !== currentStatus) {
+    await supabase
+      .from('travels')
+      .update({ status: calculatedStatus })
+      .eq('id', travelId);
+  }
+}
+
+/**
  * Create a new travel in the database
  */
 export async function createTravel(
@@ -57,20 +99,33 @@ export async function getTravels(userId: string): Promise<Travel[]> {
     throw error;
   }
 
-  return data.map((item) => ({
-    id: item.id,
-    userId: item.user_id,
-    title: item.title,
-    description: item.description,
-    destination: item.destination,
-    startDate: item.start_date,
-    endDate: item.end_date,
-    status: item.status,
-    latitude: item.latitude ? parseFloat(item.latitude) : undefined,
-    longitude: item.longitude ? parseFloat(item.longitude) : undefined,
-    createdAt: item.created_at,
-    updatedAt: item.updated_at,
-  }));
+  return data.map((item) => {
+    const travel = {
+      id: item.id,
+      userId: item.user_id,
+      title: item.title,
+      description: item.description,
+      destination: item.destination,
+      startDate: item.start_date,
+      endDate: item.end_date,
+      status: item.status,
+      latitude: item.latitude ? parseFloat(item.latitude) : undefined,
+      longitude: item.longitude ? parseFloat(item.longitude) : undefined,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
+    };
+
+    // Update status based on dates if needed
+    const calculatedStatus = calculateStatus(item.start_date, item.end_date);
+    if (calculatedStatus !== item.status) {
+      // Update in background (don't await to avoid blocking)
+      updateStatusIfNeeded(item.id, item.start_date, item.end_date, item.status).catch(console.error);
+      // Return updated status for immediate display
+      return { ...travel, status: calculatedStatus };
+    }
+
+    return travel;
+  });
 }
 
 /**
@@ -90,7 +145,7 @@ export async function getTravel(travelId: string): Promise<Travel | null> {
     throw error;
   }
 
-  return {
+  const travel = {
     id: data.id,
     userId: data.user_id,
     title: data.title,
@@ -104,6 +159,17 @@ export async function getTravel(travelId: string): Promise<Travel | null> {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   };
+
+  // Update status based on dates if needed
+  const calculatedStatus = calculateStatus(data.start_date, data.end_date);
+  if (calculatedStatus !== data.status) {
+    // Update in background (don't await to avoid blocking)
+    updateStatusIfNeeded(data.id, data.start_date, data.end_date, data.status).catch(console.error);
+    // Return updated status for immediate display
+    return { ...travel, status: calculatedStatus };
+  }
+
+  return travel;
 }
 
 /**
