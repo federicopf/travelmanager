@@ -4,7 +4,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 interface FormInputProps {
-  icon: string;
+  icon: 'person.fill' | 'envelope.fill';
   placeholder: string;
   value: string;
   onChangeText: (text: string) => void;
@@ -66,4 +66,3 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
 });
-

@@ -1,97 +1,68 @@
+import { useNavigation } from 'expo-router';
 import { useLayoutEffect } from 'react';
-import { Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useAuth } from '@/context/auth-context';
-import { router, useNavigation } from 'expo-router';
 
 export default function SettingsScreen() {
-  const { user, profile, signOut } = useAuth();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   useLayoutEffect(() => {
-    navigation.setOptions({
-      title: 'Impostazioni',
-    });
+    navigation.setOptions({ title: 'Impostazioni' });
   }, [navigation]);
-
-  const handleLogout = () => {
-    Alert.alert(
-      'Esci',
-      'Sei sicuro di voler uscire?',
-      [
-        {
-          text: 'Annulla',
-          style: 'cancel',
-        },
-        {
-          text: 'Esci',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut();
-              router.replace('/login');
-            } catch (error: any) {
-              Alert.alert('Errore', error.message || 'Errore durante il logout');
-            }
-          },
-        },
-      ]
-    );
-  };
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedView style={styles.content}>
-        {user && (
-          <ThemedView style={styles.section}>
-            {profile && (
-              <>
-                <ThemedText style={styles.label}>Username</ThemedText>
-                <ThemedText style={styles.value}>{profile.username}</ThemedText>
-              </>
-            )}
-            <ThemedText style={styles.label}>Email</ThemedText>
-            <ThemedText style={styles.value}>{user.email}</ThemedText>
-          </ThemedView>
-        )}
-        
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <ThemedText style={styles.logoutText}>Esci</ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}>
+        <View style={styles.header}>
+          <ThemedText style={styles.emoji}>📱</ThemedText>
+          <View style={styles.headerText}>
+            <ThemedText type="subtitle">Modalita locale</ThemedText>
+            <ThemedText style={styles.muted}>Nessun account e nessun backend richiesto.</ThemedText>
+          </View>
+        </View>
+
+        <ThemedView style={styles.card}>
+          <SettingRow label="Database" value="SQLite sul dispositivo" />
+          <SettingRow label="Foto" value="Solo locali (in arrivo)" />
+          <SettingRow label="Sincronizzazione" value="Disattivata" />
+          <SettingRow label="Costo infrastruttura" value="0" />
+        </ThemedView>
+
+        <ThemedView style={styles.infoCard}>
+          <ThemedText type="defaultSemiBold">I tuoi dati restano tuoi</ThemedText>
+          <ThemedText style={styles.infoText}>
+            Il diario viene salvato soltanto su questo dispositivo. Export, import e backup saranno aggiunti prima di usarlo per archivi importanti.
+          </ThemedText>
+        </ThemedView>
+      </ScrollView>
     </ThemedView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-    gap: 24,
-  },
-  section: {
-    gap: 16,
-  },
-  label: {
-    fontSize: 14,
-    opacity: 0.6,
-  },
-  value: {
-    fontSize: 16,
-  },
-  logoutButton: {
-    marginTop: 'auto',
-    padding: 16,
-    alignItems: 'center',
-  },
-  logoutText: {
-    fontSize: 16,
-    opacity: 0.8,
-  },
-});
+function SettingRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.row}>
+      <ThemedText style={styles.rowLabel}>{label}</ThemedText>
+      <ThemedText style={styles.rowValue}>{value}</ThemedText>
+    </View>
+  );
+}
 
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  content: { padding: 20, gap: 20 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  emoji: { fontSize: 38 },
+  headerText: { flex: 1, gap: 3 },
+  muted: { opacity: 0.58, fontSize: 14 },
+  card: { borderWidth: 1, borderColor: 'rgba(104,112,118,0.18)', borderRadius: 16, paddingHorizontal: 16 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', gap: 18, paddingVertical: 15, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(104,112,118,0.2)' },
+  rowLabel: { opacity: 0.62, fontSize: 14 },
+  rowValue: { flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '600' },
+  infoCard: { backgroundColor: 'rgba(10,126,164,0.08)', borderRadius: 16, padding: 18, gap: 6 },
+  infoText: { fontSize: 14, lineHeight: 21, opacity: 0.68 },
+});

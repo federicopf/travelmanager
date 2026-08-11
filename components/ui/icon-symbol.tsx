@@ -5,7 +5,8 @@ import { SymbolViewProps, SymbolWeight } from 'expo-symbols';
 import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
-type IconMapping = Record<SymbolViewProps['name'], ComponentProps<typeof MaterialIcons>['name']>;
+type SymbolName = Extract<SymbolViewProps['name'], string>;
+type IconMapping = Partial<Record<SymbolName, ComponentProps<typeof MaterialIcons>['name']>>;
 type IconSymbolName = keyof typeof MAPPING;
 
 /**
@@ -27,17 +28,18 @@ const MAPPING = {
   'checkmark.circle.fill': 'check-circle',
   'location.fill': 'location-on',
   'plus.circle.fill': 'add-circle',
-  'edit': 'edit',
+  'pencil': 'edit',
   'trash.fill': 'delete',
   'checklist': 'assignment',
-  'documents': 'folder',
-  'tricount': 'account-balance-wallet',
-  'menu': 'menu',
+  'folder.fill': 'folder',
+  'wallet.pass.fill': 'account-balance-wallet',
+  'list.bullet': 'menu',
   'person.fill': 'person',
   'person.2.fill': 'group',
   'envelope.fill': 'email',
   'lock.fill': 'lock',
-} as IconMapping;
+  'book.closed.fill': 'menu-book',
+} as const satisfies IconMapping;
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.

@@ -1,50 +1,60 @@
-# Welcome to your Expo app 👋
+# Travel Manager
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Travel Manager e' un'app React Native/Expo local-first per ricostruire i viaggi passati e collezionare i luoghi vissuti.
 
-## Get started
+Il primo prodotto e' un diario geografico gamificato: citta', borghi, trekking, parchi, montagne, spiagge, siti culturali e categorie personali alimentano mappa, bandiere, collezioni e statistiche. Social e pianificazione IA restano nella roadmap successiva.
 
-1. Install dependencies
+## Stato Attuale
 
-   ```bash
-   npm install
-   ```
+Primo incremento locale gia' presente:
 
-2. Start the app
+- Expo SDK 57, React Native 0.86 e React 19.2
+- Expo Router 57 con tab principali
+- avvio senza account obbligatorio
+- SQLite locale versionato tramite `expo-sqlite`
+- repository separato dalla UI
+- modello `VisitedPlace` con categorie urbane, culturali e naturali
+- inserimento manuale di un luogo visitato
+- date precise, mese, anno o data sconosciuta
+- paese e bandiera derivata dal codice ISO
+- coordinate, tag, note, preferiti e flag "ci tornerei"
+- diario locale e dettaglio del ricordo
+- creazione e modifica dei luoghi visitati
+- creazione, modifica ed eliminazione dei viaggi passati
+- tappe collegabili a un viaggio oppure indipendenti
+- eliminazione di un viaggio senza perdita delle tappe
+- statistiche locali per luoghi, paesi, categorie e preferiti
+- eliminazione soft predisposta per una futura sincronizzazione
 
-   ```bash
-   npx expo start
-   ```
+Prossimi incrementi:
 
-In the output, you'll find options to open the app in a
+- ricerca geografica e selezione manuale sulla mappa
+- mappa globale e passaporto delle bandiere
+- foto nel filesystem locale
+- collezioni e achievement
+- export/import e backup
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Avvio
 
 ```bash
-npm run reset-project
+npm install
+npm run start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Script disponibili:
 
-## Learn more
+```bash
+npm run start
+npm run android
+npm run ios
+npm run web
+npm run lint
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Direzione Prodotto
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+La priorita' e' completare il tracker locale dei passati. In seguito il prodotto evolvera' con profili e condivisione social, wishlist, pianificazione dei viaggi futuri e assistenza IA personalizzata usando solo il contesto autorizzato dall'utente.
 
-## Join the community
+## Piano
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Vedi `PROJECT_PLAN.md`.

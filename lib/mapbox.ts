@@ -31,8 +31,6 @@ export async function searchPlaces(
     const { supabase } = await import('@/lib/supabase');
     
     console.log('🔍 Searching places for:', query);
-    console.log('📡 Supabase URL:', supabase.supabaseUrl || 'not available');
-    
     const { data, error } = await supabase.functions.invoke('mapbox-geocoding', {
       body: { query: query.trim(), limit },
     });
@@ -103,4 +101,3 @@ export async function getMapboxToken(): Promise<string> {
     throw error;
   }
 }
-

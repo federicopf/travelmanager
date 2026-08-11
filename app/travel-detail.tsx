@@ -51,7 +51,11 @@ export default function TravelDetailScreen() {
   }, [id]);
 
   useEffect(() => {
-    loadTravel();
+    const timeoutId = setTimeout(() => {
+      void loadTravel();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [loadTravel]);
 
   const handleEdit = useCallback(() => {
@@ -99,7 +103,7 @@ export default function TravelDetailScreen() {
             style={styles.headerButton}
             onPress={handleEdit}
             activeOpacity={0.7}>
-            <IconSymbol name="edit" size={20} color="#0a7ea4" />
+            <IconSymbol name="pencil" size={20} color="#0a7ea4" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerButton}
@@ -176,4 +180,3 @@ const styles = StyleSheet.create({
     padding: 8,
   },
 });
-

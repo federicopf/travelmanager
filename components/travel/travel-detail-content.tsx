@@ -59,7 +59,7 @@ export function TravelDetailContent({ travel, onFeaturesPress }: TravelDetailCon
           activeOpacity={0.8}>
           <View style={styles.featuresButtonContent}>
             <View style={styles.featuresIconContainer}>
-              <IconSymbol name="menu" size={28} color="#fff" />
+              <IconSymbol name="list.bullet" size={28} color="#fff" />
             </View>
             <View style={styles.featuresButtonTextContainer}>
               <ThemedText style={styles.featuresButtonTitle}>Risorse viaggio</ThemedText>
@@ -166,4 +166,3 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
 });
-

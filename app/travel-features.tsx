@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useNavigation } from 'expo-router';
 import { useLayoutEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +8,6 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
 export default function TravelFeaturesScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
@@ -60,7 +59,7 @@ export default function TravelFeaturesScreen() {
             activeOpacity={0.7}>
             <View style={styles.featureCardHeader}>
               <View style={styles.featureIconContainer}>
-                <IconSymbol name="documents" size={24} color="#0a7ea4" />
+                <IconSymbol name="folder.fill" size={24} color="#0a7ea4" />
               </View>
               <View style={styles.featureCardContent}>
                 <ThemedText style={styles.featureCardTitle}>Archivio Documentale</ThemedText>
@@ -86,7 +85,7 @@ export default function TravelFeaturesScreen() {
             activeOpacity={0.7}>
             <View style={styles.featureCardHeader}>
               <View style={styles.featureIconContainer}>
-                <IconSymbol name="tricount" size={24} color="#0a7ea4" />
+                <IconSymbol name="wallet.pass.fill" size={24} color="#0a7ea4" />
               </View>
               <View style={styles.featureCardContent}>
                 <ThemedText style={styles.featureCardTitle}>Tricount</ThemedText>
@@ -190,4 +189,3 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 });
-
