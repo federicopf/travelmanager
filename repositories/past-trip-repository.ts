@@ -6,6 +6,7 @@ import { getDatabase } from '@/lib/database';
 
 interface PastTripRow {
   id: string;
+  parent_trip_id: string | null;
   title: string;
   description: string | null;
   start_date: string | null;
@@ -29,6 +30,7 @@ function optionalText(value?: string): string | null {
 function rowToPastTrip(row: PastTripRow): PastTrip {
   return {
     id: row.id,
+    parentTripId: row.parent_trip_id ?? undefined,
     title: row.title,
     description: row.description ?? undefined,
     startDate: row.start_date ?? undefined,
@@ -60,10 +62,11 @@ export async function createPastTrip(input: CreatePastTripInput): Promise<PastTr
 
   await database.runAsync(
     `INSERT INTO past_trips (
-      id, title, description, start_date, end_date, date_precision,
+      id, parent_trip_id, title, description, start_date, end_date, date_precision,
       notes, created_at, updated_at, version
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
     id,
+    input.parentTripId ?? null,
     input.title.trim(),
     optionalText(input.description),
     input.startDate ?? null,
@@ -85,9 +88,10 @@ export async function updatePastTrip(id: string, input: CreatePastTripInput): Pr
 
   await database.runAsync(
     `UPDATE past_trips SET
-      title = ?, description = ?, start_date = ?, end_date = ?, date_precision = ?,
+      parent_trip_id = ?, title = ?, description = ?, start_date = ?, end_date = ?, date_precision = ?,
       notes = ?, updated_at = ?, version = version + 1
      WHERE id = ? AND deleted_at IS NULL`,
+    input.parentTripId ?? null,
     input.title.trim(),
     optionalText(input.description),
     input.startDate ?? null,
@@ -114,6 +118,29 @@ export async function getPastTrips(): Promise<PastTrip[]> {
   return rows.map(rowToPastTrip);
 }
 
+export async function getRootPastTrips(): Promise<PastTrip[]> {
+  const database = await getDatabase();
+  const rows = await database.getAllAsync<PastTripRow>(
+    `${TRIP_SELECT}
+     WHERE trip.deleted_at IS NULL AND trip.parent_trip_id IS NULL
+     GROUP BY trip.id
+     ORDER BY COALESCE(trip.start_date, trip.created_at) DESC, trip.created_at DESC`
+  );
+  return rows.map(rowToPastTrip);
+}
+
+export async function getChildTrips(parentTripId: string): Promise<PastTrip[]> {
+  const database = await getDatabase();
+  const rows = await database.getAllAsync<PastTripRow>(
+    `${TRIP_SELECT}
+     WHERE trip.deleted_at IS NULL AND trip.parent_trip_id = ?
+     GROUP BY trip.id
+     ORDER BY COALESCE(trip.start_date, trip.created_at) ASC, trip.created_at ASC`,
+    parentTripId
+  );
+  return rows.map(rowToPastTrip);
+}
+
 export async function getPastTrip(id: string): Promise<PastTrip | null> {
   const database = await getDatabase();
   const row = await database.getFirstAsync<PastTripRow>(
@@ -130,6 +157,13 @@ export async function deletePastTrip(id: string): Promise<void> {
   const now = new Date().toISOString();
 
   await database.withTransactionAsync(async () => {
+    await database.runAsync(
+      `UPDATE past_trips
+       SET parent_trip_id = NULL, updated_at = ?, version = version + 1
+       WHERE parent_trip_id = ? AND deleted_at IS NULL`,
+      now,
+      id
+    );
     await database.runAsync(
       `UPDATE visited_places
        SET trip_id = NULL, updated_at = ?, version = version + 1

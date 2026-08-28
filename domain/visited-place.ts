@@ -1,23 +1,8 @@
 export const VISITED_PLACE_CATEGORIES = [
   'city',
   'village',
-  'culture',
-  'archaeology',
-  'religious_site',
   'trekking',
-  'trail',
-  'mountain',
-  'viewpoint',
-  'national_park',
-  'nature_reserve',
-  'forest',
-  'lake',
-  'river',
-  'waterfall',
-  'beach',
-  'island',
-  'desert',
-  'scenic_route',
+  'experience',
   'other',
 ] as const;
 
@@ -32,6 +17,7 @@ export interface VisitedPlace {
   description?: string;
   category: VisitedPlaceCategory;
   customCategory?: string;
+  customCategoryEmoji?: string;
   countryCode: string;
   countryName: string;
   region?: string;
@@ -61,13 +47,16 @@ export interface CreateVisitedPlaceInput {
   description?: string;
   category: VisitedPlaceCategory;
   customCategory?: string;
+  customCategoryEmoji?: string;
   countryCode: string;
   countryName: string;
   region?: string;
   locality?: string;
+  addressLabel?: string;
   latitude?: number;
   longitude?: number;
   visitedAt?: string;
+  visitEndDate?: string;
   datePrecision: DatePrecision;
   favorite?: boolean;
   wouldReturn?: boolean;
@@ -78,47 +67,29 @@ export interface CreateVisitedPlaceInput {
 export type UpdateVisitedPlaceInput = CreateVisitedPlaceInput;
 
 export const CATEGORY_LABELS: Record<VisitedPlaceCategory, string> = {
-  city: 'Citta',
-  village: 'Borgo',
-  culture: 'Cultura',
-  archaeology: 'Archeologia',
-  religious_site: 'Luogo religioso',
+  city: 'Città',
+  village: 'Paese',
   trekking: 'Trekking',
-  trail: 'Sentiero',
-  mountain: 'Montagna',
-  viewpoint: 'Panorama',
-  national_park: 'Parco nazionale',
-  nature_reserve: 'Riserva naturale',
-  forest: 'Foresta',
-  lake: 'Lago',
-  river: 'Fiume',
-  waterfall: 'Cascata',
-  beach: 'Spiaggia',
-  island: 'Isola',
-  desert: 'Deserto',
-  scenic_route: 'Strada panoramica',
+  experience: 'Esperienza',
   other: 'Altro',
 };
 
 export const CATEGORY_EMOJI: Record<VisitedPlaceCategory, string> = {
   city: '🏙️',
   village: '🏘️',
-  culture: '🎭',
-  archaeology: '🏺',
-  religious_site: '⛪',
   trekking: '🥾',
-  trail: '🧭',
-  mountain: '⛰️',
-  viewpoint: '🌄',
-  national_park: '🏞️',
-  nature_reserve: '🌿',
-  forest: '🌲',
-  lake: '🏔️',
-  river: '🏞️',
-  waterfall: '💧',
-  beach: '🏖️',
-  island: '🏝️',
-  desert: '🏜️',
-  scenic_route: '🛣️',
+  experience: '✨',
   other: '📍',
 };
+
+export function getPlaceEmoji(place: Pick<VisitedPlace, 'category' | 'customCategoryEmoji'>): string {
+  return place.category === 'other' && place.customCategoryEmoji
+    ? place.customCategoryEmoji
+    : CATEGORY_EMOJI[place.category];
+}
+
+export function getPlaceCategoryLabel(place: Pick<VisitedPlace, 'category' | 'customCategory'>): string {
+  return place.category === 'other' && place.customCategory
+    ? place.customCategory
+    : CATEGORY_LABELS[place.category];
+}

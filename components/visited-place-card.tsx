@@ -2,7 +2,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { CATEGORY_EMOJI, CATEGORY_LABELS, VisitedPlace } from '@/domain/visited-place';
+import { getPlaceCategoryLabel, getPlaceEmoji, VisitedPlace } from '@/domain/visited-place';
 import { countryCodeToFlag } from '@/utils/country';
 
 interface VisitedPlaceCardProps {
@@ -27,11 +27,17 @@ function formatVisitedAt(place: VisitedPlace): string {
   }
 
   const [year, month, day] = place.visitedAt.split('-').map(Number);
-  return new Intl.DateTimeFormat('it-IT', {
+  const start = new Intl.DateTimeFormat('it-IT', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   }).format(new Date(year, month - 1, day));
+  if (!place.visitEndDate || place.visitEndDate === place.visitedAt) return start;
+  const [endYear, endMonth, endDay] = place.visitEndDate.split('-').map(Number);
+  const end = new Intl.DateTimeFormat('it-IT', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  }).format(new Date(endYear, endMonth - 1, endDay));
+  return `${start} → ${end}`;
 }
 
 export function VisitedPlaceCard({ place, onPress }: VisitedPlaceCardProps) {
@@ -39,22 +45,16 @@ export function VisitedPlaceCard({ place, onPress }: VisitedPlaceCardProps) {
     <TouchableOpacity onPress={onPress} activeOpacity={0.72}>
       <ThemedView style={styles.card}>
         <View style={styles.emojiContainer}>
-          <ThemedText style={styles.emoji}>{CATEGORY_EMOJI[place.category]}</ThemedText>
+          <ThemedText style={styles.emoji}>{getPlaceEmoji(place)}</ThemedText>
         </View>
 
         <View style={styles.content}>
-          <View style={styles.titleRow}>
-            <ThemedText type="defaultSemiBold" style={styles.title} numberOfLines={1}>
-              {place.title}
-            </ThemedText>
-            {place.favorite && <ThemedText style={styles.favorite}>♥</ThemedText>}
-          </View>
+          <ThemedText type="defaultSemiBold" style={styles.title} numberOfLines={1}>{place.title}</ThemedText>
           <ThemedText style={styles.location} numberOfLines={1}>
-            {countryCodeToFlag(place.countryCode)} {place.locality ? `${place.locality}, ` : ''}
-            {place.countryName}
+            {countryCodeToFlag(place.countryCode)} {place.countryName}
           </ThemedText>
           <View style={styles.metaRow}>
-            <ThemedText style={styles.category}>{CATEGORY_LABELS[place.category]}</ThemedText>
+            <ThemedText style={styles.category}>{getPlaceCategoryLabel(place)}</ThemedText>
             <ThemedText style={styles.date}>{formatVisitedAt(place)}</ThemedText>
           </View>
         </View>
@@ -83,22 +83,14 @@ const styles = StyleSheet.create({
   },
   emoji: {
     fontSize: 25,
+    lineHeight: 34,
   },
   content: {
     flex: 1,
     gap: 4,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   title: {
     flex: 1,
-    fontSize: 17,
-  },
-  favorite: {
-    color: '#e05263',
     fontSize: 17,
   },
   location: {
@@ -115,6 +107,7 @@ const styles = StyleSheet.create({
   category: {
     color: '#0a7ea4',
     fontSize: 12,
+    lineHeight: 18,
     fontWeight: '600',
   },
   date: {

@@ -39,6 +39,7 @@ const MAPPING = {
   'envelope.fill': 'email',
   'lock.fill': 'lock',
   'book.closed.fill': 'menu-book',
+  'map.fill': 'map',
 } as const satisfies IconMapping;
 
 /**

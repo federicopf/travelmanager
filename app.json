@@ -42,6 +42,12 @@
       "expo-web-browser",
       "expo-image",
       "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Consenti a Travel Manager di usare la posizione per centrare la mappa."
+        }
+      ],
       "expo-status-bar"
     ],
     "experiments": {

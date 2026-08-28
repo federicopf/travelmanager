@@ -10,7 +10,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { VisitedPlaceCard } from '@/components/visited-place-card';
 import { PastTrip } from '@/domain/past-trip';
 import { VisitedPlace } from '@/domain/visited-place';
-import { deletePastTrip, getPastTrip } from '@/repositories/past-trip-repository';
+import { deletePastTrip, getChildTrips, getPastTrip } from '@/repositories/past-trip-repository';
 import { getVisitedPlacesByTrip } from '@/repositories/visited-place-repository';
 
 export default function PastTripDetailScreen() {
@@ -19,6 +19,7 @@ export default function PastTripDetailScreen() {
   const insets = useSafeAreaInsets();
   const [trip, setTrip] = useState<PastTrip | null>(null);
   const [places, setPlaces] = useState<VisitedPlace[]>([]);
+  const [childTrips, setChildTrips] = useState<PastTrip[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
 
@@ -27,9 +28,10 @@ export default function PastTripDetailScreen() {
       let active = true;
       const load = async () => {
       try {
-        const [tripResult, placeResults] = await Promise.all([
+        const [tripResult, placeResults, childTripResults] = await Promise.all([
           id ? getPastTrip(id) : null,
           id ? getVisitedPlacesByTrip(id) : [],
+          id ? getChildTrips(id) : [],
         ]);
         if (!tripResult) {
           Alert.alert('Viaggio non trovato', 'Questo viaggio non e piu disponibile.');
@@ -39,6 +41,7 @@ export default function PastTripDetailScreen() {
         if (active) {
           setTrip(tripResult);
           setPlaces(placeResults);
+          setChildTrips(childTripResults);
         }
       } catch (error) {
         console.error('Errore caricamento viaggio:', error);
@@ -104,12 +107,21 @@ export default function PastTripDetailScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
         <PastTripCard trip={trip} />
 
-        {trip.description && <ThemedText style={styles.description}>{trip.description}</ThemedText>}
-        {trip.notes && (
-          <ThemedView style={styles.notesCard}>
-            <ThemedText type="defaultSemiBold">Note</ThemedText>
-            <ThemedText style={styles.notes}>{trip.notes}</ThemedText>
-          </ThemedView>
+        {!trip.parentTripId && (
+          <View style={styles.subTripSection}>
+            <View style={styles.sectionHeader}>
+              <View>
+                <ThemedText type="subtitle">Sottoviaggi</ThemedText>
+                <ThemedText style={styles.muted}>Periodi dentro questo viaggio</ThemedText>
+              </View>
+              <TouchableOpacity style={styles.subTripButton} onPress={() => router.push(`/create-past-trip?parentTripId=${trip.id}`)}>
+                <ThemedText style={styles.subTripButtonText}>＋ Sottoviaggio</ThemedText>
+              </TouchableOpacity>
+            </View>
+            {childTrips.map((childTrip) => (
+              <PastTripCard key={childTrip.id} trip={childTrip} onPress={() => router.push(`/past-trip-detail?id=${childTrip.id}`)} />
+            ))}
+          </View>
         )}
 
         <View style={styles.sectionHeader}>
@@ -142,13 +154,13 @@ const styles = StyleSheet.create({
   content: { padding: 20, gap: 18 },
   headerButton: { padding: 8, marginRight: 6 },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
-  description: { fontSize: 16, lineHeight: 24, opacity: 0.75 },
-  notesCard: { padding: 16, borderRadius: 15, backgroundColor: 'rgba(10,126,164,0.07)', gap: 5 },
-  notes: { fontSize: 14, lineHeight: 21, opacity: 0.7 },
+  subTripSection: { gap: 10 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 4 },
   muted: { fontSize: 13, opacity: 0.58 },
   addButton: { backgroundColor: '#0a7ea4', paddingHorizontal: 13, paddingVertical: 9, borderRadius: 14 },
   addButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  subTripButton: { backgroundColor: 'rgba(10,126,164,0.1)', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 14 },
+  subTripButtonText: { color: '#0a7ea4', fontSize: 12, fontWeight: '700' },
   empty: { alignItems: 'center', padding: 26, gap: 7, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(104,112,118,0.3)' },
   emptyEmoji: { fontSize: 31 },
 });

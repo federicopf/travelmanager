@@ -6,9 +6,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { CATEGORY_EMOJI, CATEGORY_LABELS, VisitedPlace } from '@/domain/visited-place';
+import { PlaceMap } from '@/components/place-map';
+import { getPlaceCategoryLabel, getPlaceEmoji, VisitedPlace } from '@/domain/visited-place';
 import { deleteVisitedPlace, getVisitedPlace } from '@/repositories/visited-place-repository';
 import { countryCodeToFlag } from '@/utils/country';
+
+function formatVisitedDate(place: VisitedPlace): string {
+  if (!place.visitedAt || place.datePrecision === 'unknown') return 'Data non ricordata';
+  if (place.datePrecision === 'year') return place.visitedAt.slice(0, 4);
+  if (place.datePrecision === 'month') {
+    const [year, month] = place.visitedAt.split('-').map(Number);
+    return new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1));
+  }
+  return place.visitEndDate && place.visitEndDate !== place.visitedAt
+    ? `${place.visitedAt} → ${place.visitEndDate}`
+    : place.visitedAt;
+}
 
 export default function PlaceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,14 +38,14 @@ export default function PlaceDetailScreen() {
       try {
         const result = id ? await getVisitedPlace(id) : null;
         if (!result) {
-          Alert.alert('Luogo non trovato', 'Questo ricordo non e piu disponibile.');
+          Alert.alert('Posto non trovato', 'Questo posto non è più disponibile.');
           router.replace('/(tabs)/diary');
           return;
         }
         if (active) setPlace(result);
       } catch (error) {
         console.error('Errore caricamento luogo:', error);
-        Alert.alert('Errore', 'Non riesco ad aprire questo ricordo.');
+        Alert.alert('Errore', 'Non riesco ad aprire questo posto.');
       } finally {
         if (active) setLoading(false);
       }
@@ -44,7 +57,7 @@ export default function PlaceDetailScreen() {
 
   const handleDelete = useCallback(() => {
     if (!place) return;
-    Alert.alert('Elimina ricordo', `Vuoi eliminare "${place.title}" dal diario?`, [
+    Alert.alert('Elimina posto', `Vuoi eliminare "${place.title}" dalla mappa?`, [
       { text: 'Annulla', style: 'cancel' },
       {
         text: 'Elimina',
@@ -56,7 +69,7 @@ export default function PlaceDetailScreen() {
             router.replace('/(tabs)/diary');
           } catch (error) {
             console.error('Errore eliminazione luogo:', error);
-            Alert.alert('Errore', 'Non sono riuscito a eliminare il ricordo.');
+            Alert.alert('Errore', 'Non sono riuscito a eliminare il posto.');
             setDeleting(false);
           }
         },
@@ -66,7 +79,7 @@ export default function PlaceDetailScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: place?.title ?? 'Ricordo',
+      title: place?.title ?? 'Posto',
       headerRight: () => (
         <View style={styles.headerActions}>
           <TouchableOpacity
@@ -91,46 +104,31 @@ export default function PlaceDetailScreen() {
     );
   }
 
-  const visitedLabel = place.visitedAt ?? 'Data non ricordata';
+  const visitedLabel = formatVisitedDate(place);
 
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
         <View style={styles.hero}>
-          <ThemedText style={styles.heroEmoji}>{CATEGORY_EMOJI[place.category]}</ThemedText>
+          <ThemedText style={styles.heroEmoji}>{getPlaceEmoji(place)}</ThemedText>
           <ThemedText type="title" style={styles.title}>{place.title}</ThemedText>
           <ThemedText style={styles.country}>
             {countryCodeToFlag(place.countryCode)} {place.countryName}
           </ThemedText>
           <View style={styles.badges}>
-            <ThemedText style={styles.badge}>{place.customCategory || CATEGORY_LABELS[place.category]}</ThemedText>
-            {place.favorite && <ThemedText style={styles.favoriteBadge}>♥ Luogo del cuore</ThemedText>}
+            <ThemedText style={styles.badge}>{getPlaceCategoryLabel(place)}</ThemedText>
           </View>
         </View>
 
         <ThemedView style={styles.card}>
           <DetailRow label="Visitato" value={visitedLabel} />
-          {place.locality && <DetailRow label="Localita" value={place.locality} />}
-          {place.region && <DetailRow label="Regione" value={place.region} />}
-          {place.latitude !== undefined && place.longitude !== undefined && (
-            <DetailRow label="Coordinate" value={`${place.latitude.toFixed(5)}, ${place.longitude.toFixed(5)}`} />
-          )}
-          <DetailRow label="Ci tornerei" value={place.wouldReturn ? 'Si' : 'Non indicato'} />
+          {place.addressLabel ? <DetailRow label="Indirizzo" value={place.addressLabel} /> : null}
         </ThemedView>
 
-        {place.tags.length > 0 && (
-          <View style={styles.section}>
-            <ThemedText type="subtitle">Tag</ThemedText>
-            <View style={styles.tags}>
-              {place.tags.map((tag) => <ThemedText key={tag} style={styles.tag}>#{tag}</ThemedText>)}
-            </View>
-          </View>
-        )}
-
-        {place.notes && (
-          <View style={styles.section}>
-            <ThemedText type="subtitle">Il ricordo</ThemedText>
-            <ThemedText style={styles.notes}>{place.notes}</ThemedText>
+        {place.latitude !== undefined && place.longitude !== undefined && (
+          <View style={styles.mapSection}>
+            <ThemedText type="subtitle">Sulla mappa</ThemedText>
+            <PlaceMap latitude={place.latitude} longitude={place.longitude} onChange={() => undefined} readOnly />
           </View>
         )}
 
@@ -160,21 +158,17 @@ const styles = StyleSheet.create({
   deleteButton: { padding: 8, marginRight: 6 },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
   hero: { alignItems: 'center', gap: 8, paddingVertical: 14 },
-  heroEmoji: { fontSize: 60 },
+  heroEmoji: { fontSize: 60, lineHeight: 76 },
   title: { textAlign: 'center' },
   country: { fontSize: 17, opacity: 0.72 },
   badges: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   badge: { color: '#0a7ea4', backgroundColor: 'rgba(10,126,164,0.1)', paddingHorizontal: 11, paddingVertical: 6, borderRadius: 14, fontSize: 13, fontWeight: '700' },
-  favoriteBadge: { color: '#d44855', backgroundColor: 'rgba(212,72,85,0.1)', paddingHorizontal: 11, paddingVertical: 6, borderRadius: 14, fontSize: 13, fontWeight: '700' },
   card: { borderWidth: 1, borderColor: 'rgba(104,112,118,0.18)', borderRadius: 16, paddingHorizontal: 16 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(104,112,118,0.22)' },
   detailLabel: { opacity: 0.58, fontSize: 14 },
   detailValue: { flex: 1, textAlign: 'right', fontSize: 14, fontWeight: '600' },
-  section: { gap: 10 },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tag: { color: '#0a7ea4', backgroundColor: 'rgba(10,126,164,0.08)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, fontSize: 13 },
-  notes: { lineHeight: 25, opacity: 0.78 },
+  mapSection: { gap: 10 },
   photoPlaceholder: { alignItems: 'center', gap: 5, padding: 24, borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(104,112,118,0.3)' },
-  photoEmoji: { fontSize: 30 },
+  photoEmoji: { fontSize: 30, lineHeight: 40 },
   photoText: { fontSize: 13, opacity: 0.55 },
 });

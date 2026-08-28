@@ -16,8 +16,9 @@ interface VisitedPlaceRow {
   trip_id: string | null;
   title: string;
   description: string | null;
-  category: VisitedPlaceCategory;
+  category: string;
   custom_category: string | null;
+  custom_category_emoji: string | null;
   country_code: string;
   country_name: string;
   region: string | null;
@@ -42,16 +43,22 @@ interface VisitedPlaceRow {
 }
 
 export interface VisitedPlaceStats {
-  tripsCount: number;
   placesCount: number;
   countriesCount: number;
   categoriesCount: number;
-  favoritesCount: number;
 }
 
 function optionalText(value?: string): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
+}
+
+function normalizeCategory(category: string): VisitedPlaceCategory {
+  if (category === 'city' || category === 'village' || category === 'trekking' || category === 'experience') {
+    return category;
+  }
+  if (category === 'trail' || category === 'mountain') return 'trekking';
+  return 'other';
 }
 
 function rowToVisitedPlace(row: VisitedPlaceRow): VisitedPlace {
@@ -69,8 +76,9 @@ function rowToVisitedPlace(row: VisitedPlaceRow): VisitedPlace {
     tripId: row.trip_id ?? undefined,
     title: row.title,
     description: row.description ?? undefined,
-    category: row.category,
+    category: normalizeCategory(row.category),
     customCategory: row.custom_category ?? undefined,
+    customCategoryEmoji: row.custom_category_emoji ?? undefined,
     countryCode: row.country_code,
     countryName: row.country_name,
     region: row.region ?? undefined,
@@ -103,23 +111,26 @@ export async function createVisitedPlace(input: CreateVisitedPlaceInput): Promis
 
   await database.runAsync(
     `INSERT INTO visited_places (
-      id, trip_id, title, description, category, custom_category, country_code, country_name,
-      region, locality, latitude, longitude, geometry_type, visited_at, date_precision,
+      id, trip_id, title, description, category, custom_category, custom_category_emoji, country_code, country_name,
+      region, locality, address_label, latitude, longitude, geometry_type, visited_at, visit_end_date, date_precision,
       favorite, would_return, tags_json, notes, created_at, updated_at, version
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'point', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'point', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
     id,
     input.tripId ?? null,
     input.title.trim(),
     optionalText(input.description),
     input.category,
     optionalText(input.customCategory),
+    optionalText(input.customCategoryEmoji),
     countryCode,
     input.countryName.trim(),
     optionalText(input.region),
     optionalText(input.locality),
+    optionalText(input.addressLabel),
     input.latitude ?? null,
     input.longitude ?? null,
     input.visitedAt ?? null,
+    input.visitEndDate ?? null,
     input.datePrecision,
     input.favorite ? 1 : 0,
     input.wouldReturn === undefined ? null : input.wouldReturn ? 1 : 0,
@@ -146,9 +157,9 @@ export async function updateVisitedPlace(
 
   await database.runAsync(
     `UPDATE visited_places SET
-      trip_id = ?, title = ?, description = ?, category = ?, custom_category = ?,
-      country_code = ?, country_name = ?, region = ?, locality = ?, latitude = ?,
-      longitude = ?, visited_at = ?, date_precision = ?, favorite = ?, would_return = ?,
+      trip_id = ?, title = ?, description = ?, category = ?, custom_category = ?, custom_category_emoji = ?,
+      country_code = ?, country_name = ?, region = ?, locality = ?, address_label = ?, latitude = ?,
+      longitude = ?, visited_at = ?, visit_end_date = ?, date_precision = ?, favorite = ?, would_return = ?,
       tags_json = ?, notes = ?, updated_at = ?, version = version + 1
      WHERE id = ? AND deleted_at IS NULL`,
     input.tripId ?? null,
@@ -156,13 +167,16 @@ export async function updateVisitedPlace(
     optionalText(input.description),
     input.category,
     optionalText(input.customCategory),
+    optionalText(input.customCategoryEmoji),
     normalizeCountryCode(input.countryCode),
     input.countryName.trim(),
     optionalText(input.region),
     optionalText(input.locality),
+    optionalText(input.addressLabel),
     input.latitude ?? null,
     input.longitude ?? null,
     input.visitedAt ?? null,
+    input.visitEndDate ?? null,
     input.datePrecision,
     input.favorite ? 1 : 0,
     input.wouldReturn === undefined ? null : input.wouldReturn ? 1 : 0,
@@ -228,22 +242,16 @@ export async function getVisitedPlaceStats(): Promise<VisitedPlaceStats> {
     places_count: number;
     countries_count: number;
     categories_count: number;
-    favorites_count: number;
-    trips_count: number;
   }>(`SELECT
       COUNT(*) AS places_count,
       COUNT(DISTINCT country_code) AS countries_count,
-      COUNT(DISTINCT category) AS categories_count,
-      SUM(CASE WHEN favorite = 1 THEN 1 ELSE 0 END) AS favorites_count,
-      (SELECT COUNT(*) FROM past_trips WHERE deleted_at IS NULL) AS trips_count
+      COUNT(DISTINCT category) AS categories_count
     FROM visited_places
     WHERE deleted_at IS NULL`);
 
   return {
-    tripsCount: row?.trips_count ?? 0,
     placesCount: row?.places_count ?? 0,
     countriesCount: row?.countries_count ?? 0,
     categoriesCount: row?.categories_count ?? 0,
-    favoritesCount: row?.favorites_count ?? 0,
   };
 }

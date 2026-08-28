@@ -2,6 +2,7 @@ import { DatePrecision } from '@/domain/visited-place';
 
 export interface PastTrip {
   id: string;
+  parentTripId?: string;
   title: string;
   description?: string;
   startDate?: string;
@@ -18,6 +19,7 @@ export interface PastTrip {
 }
 
 export interface CreatePastTripInput {
+  parentTripId?: string;
   title: string;
   description?: string;
   startDate?: string;

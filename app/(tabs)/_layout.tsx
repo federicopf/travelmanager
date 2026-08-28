@@ -31,9 +31,17 @@ export default function TabLayout() {
       <Tabs.Screen
         name="diary"
         options={{
-          title: 'Diario',
+          title: 'Posti',
           headerShown: true,
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="book.closed.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="location.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: 'Mappa',
+          headerShown: true,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
         }}
       />
       <Tabs.Screen name="travels" options={{ href: null }} />

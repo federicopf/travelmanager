@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 const DATABASE_NAME = 'travel-manager.db';
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 4;
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -88,6 +88,61 @@ async function migrateDatabase(database: SQLite.SQLiteDatabase): Promise<void> {
         ON local_photos(visited_place_id);
 
         PRAGMA user_version = 1;
+      `);
+    });
+  }
+
+  if (currentVersion < 2) {
+    const columns = await database.getAllAsync<{ name: string }>('PRAGMA table_info(past_trips)');
+    const hasParentTrip = columns.some((column) => column.name === 'parent_trip_id');
+
+    await database.withTransactionAsync(async () => {
+      if (!hasParentTrip) {
+        await database.execAsync(
+          'ALTER TABLE past_trips ADD COLUMN parent_trip_id TEXT REFERENCES past_trips(id) ON DELETE SET NULL'
+        );
+      }
+      await database.execAsync(
+        'CREATE INDEX IF NOT EXISTS idx_past_trips_parent ON past_trips(parent_trip_id)'
+      );
+      await database.execAsync('PRAGMA user_version = 2');
+    });
+  }
+
+
+  if (currentVersion < 3) {
+    await database.withTransactionAsync(async () => {
+      await database.execAsync(`
+        UPDATE visited_places
+        SET category = CASE
+          WHEN category IN ('city', 'village', 'trekking', 'experience', 'other') THEN category
+          WHEN category IN ('trail', 'mountain') THEN 'trekking'
+          ELSE 'other'
+        END;
+        PRAGMA user_version = 3;
+      `);
+    });
+  }
+
+  if (currentVersion < 4) {
+    const placeColumns = await database.getAllAsync<{ name: string }>('PRAGMA table_info(visited_places)');
+    const hasCustomEmoji = placeColumns.some((column) => column.name === 'custom_category_emoji');
+
+    await database.withTransactionAsync(async () => {
+      if (!hasCustomEmoji) {
+        await database.execAsync('ALTER TABLE visited_places ADD COLUMN custom_category_emoji TEXT');
+      }
+      await database.execAsync(`
+        CREATE TABLE IF NOT EXISTS custom_categories (
+          name TEXT PRIMARY KEY COLLATE NOCASE NOT NULL,
+          emoji TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        );
+        INSERT OR IGNORE INTO custom_categories (name, emoji, created_at)
+        SELECT custom_category, COALESCE(custom_category_emoji, '📍'), updated_at
+        FROM visited_places
+        WHERE category = 'other' AND custom_category IS NOT NULL;
+        PRAGMA user_version = 4;
       `);
     });
   }

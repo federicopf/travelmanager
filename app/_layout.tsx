@@ -19,9 +19,9 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
             name="create-visited-place"
-            options={{ title: 'Aggiungi luogo', presentation: 'modal' }}
+            options={{ title: 'Aggiungi posto', presentation: 'modal' }}
           />
-          <Stack.Screen name="place-detail" options={{ title: 'Ricordo' }} />
+          <Stack.Screen name="place-detail" options={{ title: 'Posto' }} />
           <Stack.Screen name="create-past-trip" options={{ title: 'Nuovo viaggio', presentation: 'modal' }} />
           <Stack.Screen name="past-trip-detail" options={{ title: 'Viaggio passato' }} />
           <Stack.Screen name="login" options={{ headerShown: false, presentation: 'modal' }} />

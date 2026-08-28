@@ -11,11 +11,9 @@ import {
 } from '@/repositories/visited-place-repository';
 
 const EMPTY_STATS: VisitedPlaceStats = {
-  tripsCount: 0,
   placesCount: 0,
   countriesCount: 0,
   categoriesCount: 0,
-  favoritesCount: 0,
 };
 
 export default function HomeScreen() {
@@ -43,7 +41,7 @@ export default function HomeScreen() {
           <ThemedText style={styles.eyebrow}>IL TUO MONDO</ThemedText>
           <ThemedText type="title" style={styles.title}>Ogni posto racconta qualcosa.</ThemedText>
           <ThemedText style={styles.subtitle}>
-            Citta, trekking, natura e ricordi: inizia a ricostruire i luoghi che hai vissuto.
+            Città, trekking e natura: ogni esperienza diventa un punto distinto.
           </ThemedText>
           <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/create-visited-place')}>
             <ThemedText style={styles.primaryButtonText}>＋ Sono stato qui</ThemedText>
@@ -51,11 +49,9 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.statsGrid}>
-          <StatCard value={stats.tripsCount} label="Viaggi" emoji="🧳" />
-          <StatCard value={stats.placesCount} label="Luoghi" emoji="📍" />
+          <StatCard value={stats.placesCount} label="Posti" emoji="📍" />
           <StatCard value={stats.countriesCount} label="Bandiere" emoji="🚩" />
           <StatCard value={stats.categoriesCount} label="Esperienze" emoji="🧭" />
-          <StatCard value={stats.favoritesCount} label="Del cuore" emoji="♥" />
         </View>
 
         <ThemedView style={styles.mapPreview}>
@@ -63,13 +59,13 @@ export default function HomeScreen() {
           <View style={styles.mapCopy}>
             <ThemedText type="defaultSemiBold">La tua mappa prende forma</ThemedText>
             <ThemedText style={styles.mapText}>
-              I dati sono gia salvati con coordinate e paesi. La vista cartografica e il passaporto sono il prossimo incremento.
+              Tutti i posti sono punti indipendenti. Apri la mappa per rivederli insieme.
             </ThemedText>
           </View>
         </ThemedView>
 
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/(tabs)/diary')}>
-          <ThemedText style={styles.secondaryButtonText}>Apri il diario</ThemedText>
+        <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/(tabs)/map')}>
+          <ThemedText style={styles.secondaryButtonText}>Apri la mappa</ThemedText>
         </TouchableOpacity>
       </ScrollView>
     </ThemedView>

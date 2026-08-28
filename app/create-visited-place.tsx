@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -7,205 +7,162 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Switch,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AddressSearch, AddressSearchSelection } from '@/components/address-search';
+import { CountryPicker } from '@/components/country-picker';
+import { PlaceMap } from '@/components/place-map';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { CountryOption } from '@/constants/countries';
 import {
   CATEGORY_EMOJI,
   CATEGORY_LABELS,
-  DatePrecision,
   VISITED_PLACE_CATEGORIES,
   VisitedPlaceCategory,
 } from '@/domain/visited-place';
-import { PastTrip } from '@/domain/past-trip';
-import { getPastTrips } from '@/repositories/past-trip-repository';
 import {
   createVisitedPlace,
   getVisitedPlace,
   updateVisitedPlace,
 } from '@/repositories/visited-place-repository';
-import { countryCodeToFlag, normalizeCountryCode } from '@/utils/country';
+import {
+  CustomCategory,
+  getCustomCategories,
+  saveCustomCategory,
+} from '@/repositories/custom-category-repository';
 
-const DATE_PRECISIONS: { value: DatePrecision; label: string }[] = [
-  { value: 'exact', label: 'Giorno' },
-  { value: 'month', label: 'Mese' },
-  { value: 'year', label: 'Anno' },
-  { value: 'unknown', label: 'Non ricordo' },
-];
+type DateMode = 'single' | 'range';
 
-function todayAsIsoDate(): string {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+const EMOJI_OPTIONS = ['📍', '🏖️', '🏔️', '🌊', '🌲', '🏛️', '🎭', '🍜', '🎵', '🚲', '⛷️', '🤿', '✨', '❤️'];
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
-function isValidApproximateDate(value: string, precision: DatePrecision): boolean {
-  if (precision === 'unknown') return true;
-  if (precision === 'year') return /^\d{4}$/.test(value);
-  if (precision === 'month') return /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+function validDate(value: string): boolean {
   if (!/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/.test(value)) return false;
-
   const [year, month, day] = value.split('-').map(Number);
   const date = new Date(year, month - 1, day);
   return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
-function datePlaceholder(precision: DatePrecision): string {
-  if (precision === 'year') return 'Es. 2022';
-  if (precision === 'month') return 'Es. 2022-08';
-  return 'AAAA-MM-GG';
-}
-
 export default function CreateVisitedPlaceScreen() {
-  const { id, tripId: initialTripId } = useLocalSearchParams<{ id?: string; tripId?: string }>();
+  const { id } = useLocalSearchParams<{ id?: string }>();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const [tripId, setTripId] = useState<string | undefined>(initialTripId);
-  const [trips, setTrips] = useState<PastTrip[]>([]);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<VisitedPlaceCategory>('city');
   const [customCategory, setCustomCategory] = useState('');
-  const [countryName, setCountryName] = useState('');
-  const [countryCode, setCountryCode] = useState('');
-  const [locality, setLocality] = useState('');
-  const [region, setRegion] = useState('');
-  const [datePrecision, setDatePrecision] = useState<DatePrecision>('exact');
-  const [visitedAt, setVisitedAt] = useState(todayAsIsoDate());
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
-  const [tags, setTags] = useState('');
-  const [notes, setNotes] = useState('');
-  const [favorite, setFavorite] = useState(false);
-  const [wouldReturn, setWouldReturn] = useState(false);
+  const [customCategoryEmoji, setCustomCategoryEmoji] = useState('📍');
+  const [savedCustomCategories, setSavedCustomCategories] = useState<CustomCategory[]>([]);
+  const [country, setCountry] = useState<CountryOption>();
+  const [addressSearch, setAddressSearch] = useState('');
+  const [latitude, setLatitude] = useState<number>();
+  const [longitude, setLongitude] = useState<number>();
+  const [dateMode, setDateMode] = useState<DateMode>('single');
+  const [startDate, setStartDate] = useState(today());
+  const [endDate, setEndDate] = useState(today());
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(Boolean(id));
-
-  const normalizedCode = useMemo(() => normalizeCountryCode(countryCode), [countryCode]);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: id ? 'Modifica luogo' : 'Aggiungi luogo' });
   }, [id, navigation]);
 
   useEffect(() => {
-    const loadTrips = async () => {
-      try {
-        setTrips(await getPastTrips());
-      } catch (error) {
-        console.error('Errore caricamento viaggi:', error);
-      }
-    };
-    void loadTrips();
+    void getCustomCategories().then(setSavedCustomCategories).catch((error) => {
+      console.error('Errore categorie personalizzate:', error);
+    });
   }, []);
 
   useEffect(() => {
-    if (!id) return;
-
-    const loadPlace = async () => {
+    const load = async () => {
       try {
+        if (!id) return;
+
         const place = await getVisitedPlace(id);
         if (!place) {
-          Alert.alert('Luogo non trovato', 'Questo ricordo non e piu disponibile.');
+          Alert.alert('Luogo non trovato', 'Questo ricordo non è più disponibile.');
           router.back();
           return;
         }
-
-        setTripId(place.tripId);
         setTitle(place.title);
         setCategory(place.category);
         setCustomCategory(place.customCategory ?? '');
-        setCountryName(place.countryName);
-        setCountryCode(place.countryCode);
-        setLocality(place.locality ?? '');
-        setRegion(place.region ?? '');
-        setDatePrecision(place.datePrecision);
-        setVisitedAt(place.visitedAt ?? '');
-        setLatitude(place.latitude?.toString() ?? '');
-        setLongitude(place.longitude?.toString() ?? '');
-        setTags(place.tags.join(', '));
-        setNotes(place.notes ?? '');
-        setFavorite(place.favorite);
-        setWouldReturn(place.wouldReturn ?? false);
+        setCustomCategoryEmoji(place.customCategoryEmoji ?? '📍');
+        setCountry({ code: place.countryCode, name: place.countryName });
+        setAddressSearch(place.addressLabel ?? '');
+        setLatitude(place.latitude);
+        setLongitude(place.longitude);
+        setStartDate(place.visitedAt ?? today());
+        setEndDate(place.visitEndDate ?? place.visitedAt ?? today());
+        setDateMode(place.visitEndDate && place.visitEndDate !== place.visitedAt ? 'range' : 'single');
       } catch (error) {
-        console.error('Errore caricamento luogo:', error);
-        Alert.alert('Errore', 'Non riesco a caricare il ricordo da modificare.');
+        console.error('Errore caricamento form luogo:', error);
+        Alert.alert('Errore', 'Non riesco a preparare il ricordo.');
       } finally {
         setLoading(false);
       }
     };
-
-    void loadPlace();
+    void load();
   }, [id]);
 
-  const handlePrecisionChange = (precision: DatePrecision) => {
-    setDatePrecision(precision);
-    const today = todayAsIsoDate();
-    if (precision === 'exact') setVisitedAt(today);
-    if (precision === 'month') setVisitedAt(today.slice(0, 7));
-    if (precision === 'year') setVisitedAt(today.slice(0, 4));
-    if (precision === 'unknown') setVisitedAt('');
-  };
-
-  const handleSubmit = async () => {
+  const save = async () => {
     if (!title.trim()) {
-      Alert.alert('Titolo mancante', 'Dai un nome al luogo o all’esperienza.');
+      Alert.alert('Nome mancante', 'Dai un nome al luogo o all’esperienza.');
       return;
     }
-
-    if (!countryName.trim() || !/^[A-Z]{2}$/.test(normalizedCode)) {
-      Alert.alert('Paese non valido', 'Inserisci il nome e il codice ISO di due lettere, per esempio IT.');
+    if (!country) {
+      Alert.alert('Bandiera mancante', 'Scegli il paese del luogo.');
       return;
     }
-
+    if (latitude === undefined || longitude === undefined) {
+      Alert.alert('Posizione mancante', 'Tocca la mappa per indicare dove si trova.');
+      return;
+    }
     if (category === 'other' && !customCategory.trim()) {
-      Alert.alert('Categoria mancante', 'Descrivi il tipo di esperienza.');
+      Alert.alert('Categoria mancante', 'Scrivi che tipo di esperienza è.');
       return;
     }
-
-    if (!isValidApproximateDate(visitedAt.trim(), datePrecision)) {
-      Alert.alert('Data non valida', `Usa il formato indicato: ${datePlaceholder(datePrecision)}.`);
+    if (category === 'other' && !customCategoryEmoji.trim()) {
+      Alert.alert('Emoji mancante', 'Scegli o inserisci un’emoji per la categoria.');
       return;
     }
-
-    const parsedLatitude = latitude.trim() ? Number(latitude.replace(',', '.')) : undefined;
-    const parsedLongitude = longitude.trim() ? Number(longitude.replace(',', '.')) : undefined;
-    const hasOnlyOneCoordinate = (parsedLatitude === undefined) !== (parsedLongitude === undefined);
-    const invalidCoordinates =
-      (parsedLatitude !== undefined && (!Number.isFinite(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90)) ||
-      (parsedLongitude !== undefined && (!Number.isFinite(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180));
-
-    if (hasOnlyOneCoordinate || invalidCoordinates) {
-      Alert.alert('Coordinate non valide', 'Inserisci latitudine e longitudine insieme, nei rispettivi intervalli.');
+    if (!validDate(startDate)) {
+      Alert.alert('Data non valida', 'Usa il formato AAAA-MM-GG.');
       return;
     }
-
+    if (dateMode === 'range' && (!validDate(endDate) || startDate > endDate)) {
+      Alert.alert('Intervallo non valido', 'La data finale deve essere successiva a quella iniziale.');
+      return;
+    }
     try {
       setSaving(true);
+      if (category === 'other') {
+        await saveCustomCategory(customCategory, customCategoryEmoji);
+      }
       const input = {
-        tripId,
         title,
         category,
         customCategory: category === 'other' ? customCategory : undefined,
-        countryName,
-        countryCode: normalizedCode,
-        locality,
-        region,
-        visitedAt: datePrecision === 'unknown' ? undefined : visitedAt.trim(),
-        datePrecision,
-        latitude: parsedLatitude,
-        longitude: parsedLongitude,
-        favorite,
-        wouldReturn,
-        tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
-        notes,
+        customCategoryEmoji: category === 'other' ? customCategoryEmoji : undefined,
+        countryCode: country.code,
+        countryName: country.name,
+        addressLabel: addressSearch.trim() || undefined,
+        latitude,
+        longitude,
+        visitedAt: startDate,
+        visitEndDate: dateMode === 'range' ? endDate : undefined,
+        datePrecision: 'exact' as const,
+        favorite: false,
+        tags: [],
       };
+
       if (id) {
         await updateVisitedPlace(id, input);
         router.back();
@@ -221,222 +178,135 @@ export default function CreateVisitedPlaceScreen() {
   };
 
   if (loading) {
-    return (
-      <ThemedView style={[styles.container, styles.loading]}>
-        <ActivityIndicator size="large" color="#0a7ea4" />
-      </ThemedView>
-    );
+    return <ThemedView style={[styles.container, styles.loading]}><ActivityIndicator size="large" color="#0a7ea4" /></ThemedView>;
   }
+
+  const selectAddress = (selection: AddressSearchSelection) => {
+    setLatitude(selection.latitude);
+    setLongitude(selection.longitude);
+    setAddressSearch(selection.addressLabel);
+    if (!title.trim()) setTitle(selection.suggestedTitle);
+    if (selection.countryCode && selection.countryName) {
+      setCountry({ code: selection.countryCode, name: selection.countryName });
+    }
+  };
 
   return (
     <ThemedView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
-          keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]} keyboardShouldPersistTaps="handled">
           <View style={styles.hero}>
-            <ThemedText style={styles.heroEmoji}>{CATEGORY_EMOJI[category]}</ThemedText>
-            <View style={styles.heroText}>
-              <ThemedText type="title">{id ? 'Modifica ricordo' : 'Nuovo ricordo'}</ThemedText>
-              <ThemedText style={styles.muted}>Citta, natura, trekking o qualsiasi posto vissuto.</ThemedText>
+            <ThemedText style={styles.heroEmoji}>📍</ThemedText>
+            <View style={styles.heroCopy}>
+              <ThemedText type="title">{id ? 'Modifica posto' : 'Aggiungi un posto'}</ThemedText>
+              <ThemedText style={styles.muted}>Un punto distinto sulla tua mappa personale.</ThemedText>
             </View>
           </View>
 
-          <Field label="Nome del luogo o esperienza *">
-            <TextInput
-              style={styles.input}
-              placeholder="Es. Sentiero degli Dei"
-              placeholderTextColor="#8a9196"
-              value={title}
-              onChangeText={setTitle}
-            />
+          <Field label="Nome *">
+            <TextInput style={styles.input} placeholder="Es. Tre Cime di Lavaredo" placeholderTextColor="#8a9196" value={title} onChangeText={setTitle} />
           </Field>
 
-          <Field label="Categoria *">
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-              {VISITED_PLACE_CATEGORIES.map((item) => {
-                const selected = item === category;
-                return (
-                  <TouchableOpacity
-                    key={item}
-                    style={[styles.categoryChip, selected && styles.categoryChipSelected]}
-                    onPress={() => setCategory(item)}>
-                    <ThemedText style={styles.chipEmoji}>{CATEGORY_EMOJI[item]}</ThemedText>
-                    <ThemedText style={[styles.categoryChipText, selected && styles.categoryChipTextSelected]}>
-                      {CATEGORY_LABELS[item]}
-                    </ThemedText>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </Field>
-
-          {category === 'other' && (
-            <Field label="Categoria personalizzata *">
-              <TextInput
-                style={styles.input}
-                placeholder="Es. Via ferrata"
-                placeholderTextColor="#8a9196"
-                value={customCategory}
-                onChangeText={setCustomCategory}
-              />
-            </Field>
-          )}
-
-          <View style={styles.twoColumns}>
-            <Field label="Paese *" style={styles.flexField}>
-              <TextInput
-                style={styles.input}
-                placeholder="Italia"
-                placeholderTextColor="#8a9196"
-                value={countryName}
-                onChangeText={setCountryName}
-              />
-            </Field>
-            <Field label="Codice *" style={styles.codeField}>
-              <View style={styles.codeInputWrap}>
-                <TextInput
-                  style={[styles.input, styles.codeInput]}
-                  placeholder="IT"
-                  placeholderTextColor="#8a9196"
-                  autoCapitalize="characters"
-                  maxLength={2}
-                  value={countryCode}
-                  onChangeText={setCountryCode}
-                />
-                <ThemedText style={styles.flag}>{countryCodeToFlag(normalizedCode)}</ThemedText>
-              </View>
-            </Field>
-          </View>
-
-          <View style={styles.twoColumns}>
-            <Field label="Localita" style={styles.flexField}>
-              <TextInput style={styles.input} value={locality} onChangeText={setLocality} placeholder="Positano" placeholderTextColor="#8a9196" />
-            </Field>
-            <Field label="Regione" style={styles.flexField}>
-              <TextInput style={styles.input} value={region} onChangeText={setRegion} placeholder="Campania" placeholderTextColor="#8a9196" />
-            </Field>
-          </View>
-
-          {trips.length > 0 && (
-            <Field label="Viaggio collegato">
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-                <TouchableOpacity
-                  style={[styles.categoryChip, !tripId && styles.categoryChipSelected]}
-                  onPress={() => setTripId(undefined)}>
-                  <ThemedText style={[styles.categoryChipText, !tripId && styles.categoryChipTextSelected]}>Nessun viaggio</ThemedText>
-                </TouchableOpacity>
-                {trips.map((trip) => (
-                  <TouchableOpacity
-                    key={trip.id}
-                    style={[styles.categoryChip, tripId === trip.id && styles.categoryChipSelected]}
-                    onPress={() => setTripId(trip.id)}>
-                    <ThemedText style={styles.chipEmoji}>🧳</ThemedText>
-                    <ThemedText style={[styles.categoryChipText, tripId === trip.id && styles.categoryChipTextSelected]}>
-                      {trip.title}
-                    </ThemedText>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </Field>
-          )}
-
-          <Field label="Quanto ricordi della data?">
-            <View style={styles.precisionRow}>
-              {DATE_PRECISIONS.map((item) => (
-                <TouchableOpacity
-                  key={item.value}
-                  style={[styles.precisionChip, datePrecision === item.value && styles.precisionChipSelected]}
-                  onPress={() => handlePrecisionChange(item.value)}>
-                  <ThemedText style={[styles.precisionText, datePrecision === item.value && styles.precisionTextSelected]}>
-                    {item.label}
-                  </ThemedText>
+          <Field label="Che tipo di posto è?">
+            <View style={styles.chips}>
+              {VISITED_PLACE_CATEGORIES.map((item) => (
+                <TouchableOpacity key={item} style={[styles.chip, category === item && styles.chipSelected]} onPress={() => setCategory(item)}>
+                  <ThemedText style={styles.chipEmoji}>{CATEGORY_EMOJI[item]}</ThemedText>
+                  <ThemedText style={[styles.chipText, category === item && styles.chipTextSelected]}>{CATEGORY_LABELS[item]}</ThemedText>
                 </TouchableOpacity>
               ))}
             </View>
           </Field>
-
-          {datePrecision !== 'unknown' && (
-            <Field label="Data della visita *">
-              <TextInput
-                style={styles.input}
-                placeholder={datePlaceholder(datePrecision)}
-                placeholderTextColor="#8a9196"
-                value={visitedAt}
-                onChangeText={setVisitedAt}
-                keyboardType="numbers-and-punctuation"
-              />
-            </Field>
+          {category === 'other' && (
+            <View style={styles.customCategoryBox}>
+              {savedCustomCategories.length > 0 && (
+                <Field label="Le tue categorie">
+                  <View style={styles.chips}>
+                    {savedCustomCategories.map((saved) => {
+                      const selected = customCategory.toLocaleLowerCase('it') === saved.name.toLocaleLowerCase('it');
+                      return (
+                        <TouchableOpacity
+                          key={saved.name}
+                          style={[styles.chip, selected && styles.chipSelected]}
+                          onPress={() => {
+                            setCustomCategory(saved.name);
+                            setCustomCategoryEmoji(saved.emoji);
+                          }}>
+                          <ThemedText style={styles.chipEmoji}>{saved.emoji}</ThemedText>
+                          <ThemedText style={[styles.chipText, selected && styles.chipTextSelected]}>{saved.name}</ThemedText>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </Field>
+              )}
+              <Field label="Nome nuova categoria *">
+                <TextInput
+                  style={styles.input}
+                  placeholder="Es. Gastronomia"
+                  placeholderTextColor="#8a9196"
+                  value={customCategory}
+                  onChangeText={setCustomCategory}
+                />
+              </Field>
+              <Field label="Scegli un’emoji *">
+                <View style={styles.emojiGrid}>
+                  {EMOJI_OPTIONS.map((emoji) => (
+                    <TouchableOpacity
+                      key={emoji}
+                      style={[styles.emojiButton, customCategoryEmoji === emoji && styles.emojiButtonSelected]}
+                      onPress={() => setCustomCategoryEmoji(emoji)}>
+                      <ThemedText style={styles.emojiOption}>{emoji}</ThemedText>
+                    </TouchableOpacity>
+                  ))}
+                  <TextInput
+                    style={[styles.emojiButton, styles.emojiInput]}
+                    value={customCategoryEmoji}
+                    onChangeText={setCustomCategoryEmoji}
+                    placeholder="🙂"
+                    maxLength={8}
+                  />
+                </View>
+                <ThemedText style={styles.hint}>Puoi anche incollare la tua emoji nell’ultimo riquadro.</ThemedText>
+              </Field>
+            </View>
           )}
 
-          <Field label="Coordinate (opzionali)">
-            <View style={styles.twoColumns}>
-              <TextInput
-                style={[styles.input, styles.flexField]}
-                placeholder="Latitudine"
-                placeholderTextColor="#8a9196"
-                keyboardType="numbers-and-punctuation"
-                value={latitude}
-                onChangeText={setLatitude}
-              />
-              <TextInput
-                style={[styles.input, styles.flexField]}
-                placeholder="Longitudine"
-                placeholderTextColor="#8a9196"
-                keyboardType="numbers-and-punctuation"
-                value={longitude}
-                onChangeText={setLongitude}
-              />
+          <Field label="Cerca luogo o indirizzo">
+            <AddressSearch value={addressSearch} onChangeText={setAddressSearch} onSelect={selectAddress} />
+          </Field>
+
+          <Field label="Bandiera *"><CountryPicker value={country} onChange={setCountry} /></Field>
+
+          <Field label="Posizione sulla mappa *">
+            <PlaceMap latitude={latitude} longitude={longitude} onChange={(lat, lng) => { setLatitude(lat); setLongitude(lng); }} />
+          </Field>
+
+          <Field label="Quando?">
+            <View style={styles.chips}>
+              {([
+                ['single', 'Un giorno'],
+                ['range', 'Più giorni'],
+              ] as const).map(([mode, label]) => (
+                <TouchableOpacity key={mode} style={[styles.chip, dateMode === mode && styles.chipSelected]} onPress={() => setDateMode(mode)}>
+                  <ThemedText style={[styles.chipText, dateMode === mode && styles.chipTextSelected]}>{label}</ThemedText>
+                </TouchableOpacity>
+              ))}
             </View>
           </Field>
-
-          <Field label="Tag">
-            <TextInput
-              style={styles.input}
-              placeholder="mare, amici, tramonto"
-              placeholderTextColor="#8a9196"
-              value={tags}
-              onChangeText={setTags}
-            />
-          </Field>
-
-          <Field label="Note">
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Cosa vuoi ricordare?"
-              placeholderTextColor="#8a9196"
-              multiline
-              textAlignVertical="top"
-              value={notes}
-              onChangeText={setNotes}
-            />
-          </Field>
-
-          <View style={styles.toggleCard}>
-            <View style={styles.toggleText}>
-              <ThemedText type="defaultSemiBold">Luogo del cuore</ThemedText>
-              <ThemedText style={styles.muted}>Aggiungilo ai preferiti.</ThemedText>
-            </View>
-            <Switch value={favorite} onValueChange={setFavorite} trackColor={{ true: '#0a7ea4' }} />
+          <View style={styles.dateRow}>
+            <Field label={dateMode === 'range' ? 'Dal *' : 'Data *'} style={styles.flex}>
+              <TextInput style={styles.input} value={startDate} onChangeText={setStartDate} placeholder="AAAA-MM-GG" keyboardType="numbers-and-punctuation" />
+            </Field>
+            {dateMode === 'range' && (
+              <Field label="Al *" style={styles.flex}>
+                <TextInput style={styles.input} value={endDate} onChangeText={setEndDate} placeholder="AAAA-MM-GG" keyboardType="numbers-and-punctuation" />
+              </Field>
+            )}
           </View>
 
-          <View style={styles.toggleCard}>
-            <View style={styles.toggleText}>
-              <ThemedText type="defaultSemiBold">Ci tornerei</ThemedText>
-              <ThemedText style={styles.muted}>Un segnale utile per le collezioni future.</ThemedText>
-            </View>
-            <Switch value={wouldReturn} onValueChange={setWouldReturn} trackColor={{ true: '#0a7ea4' }} />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.saveButton, saving && styles.disabledButton]}
-            onPress={handleSubmit}
-            disabled={saving}>
-            <ThemedText style={styles.saveButtonText}>
-              {saving ? 'Salvataggio...' : id ? 'Salva modifiche' : 'Salva nel diario'}
-            </ThemedText>
+          <TouchableOpacity style={[styles.save, saving && styles.disabled]} onPress={save} disabled={saving}>
+            <ThemedText style={styles.saveText}>{saving ? 'Salvataggio…' : 'Salva sulla mappa'}</ThemedText>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -445,60 +315,36 @@ export default function CreateVisitedPlaceScreen() {
 }
 
 function Field({ label, children, style }: { label: string; children: React.ReactNode; style?: object }) {
-  return (
-    <View style={[styles.field, style]}>
-      <ThemedText style={styles.label}>{label}</ThemedText>
-      {children}
-    </View>
-  );
+  return <View style={[styles.field, style]}><ThemedText style={styles.label}>{label}</ThemedText>{children}</View>;
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loading: { alignItems: 'center', justifyContent: 'center' },
   content: { padding: 20, gap: 20 },
-  hero: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 4 },
-  heroEmoji: { fontSize: 42 },
-  heroText: { flex: 1, gap: 4 },
-  muted: { opacity: 0.62, fontSize: 14 },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  heroEmoji: { fontSize: 42, lineHeight: 54 },
+  heroCopy: { flex: 1, gap: 4 },
+  muted: { fontSize: 14, opacity: 0.62 },
   field: { gap: 8 },
-  flexField: { flex: 1 },
-  codeField: { width: 112 },
   label: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, opacity: 0.65 },
-  input: {
-    borderWidth: 1,
-    borderColor: 'rgba(104, 112, 118, 0.25)',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 16,
-    color: '#687076',
-  },
-  textArea: { minHeight: 110, paddingTop: 13 },
-  chips: { gap: 8, paddingRight: 12 },
-  categoryChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9,
-    borderRadius: 18, borderWidth: 1, borderColor: 'rgba(104, 112, 118, 0.22)',
-  },
-  categoryChipSelected: { backgroundColor: '#0a7ea4', borderColor: '#0a7ea4' },
-  chipEmoji: { fontSize: 16 },
-  categoryChipText: { fontSize: 13, fontWeight: '600' },
-  categoryChipTextSelected: { color: '#fff' },
-  twoColumns: { flexDirection: 'row', gap: 12 },
-  codeInputWrap: { position: 'relative' },
-  codeInput: { paddingRight: 40 },
-  flag: { position: 'absolute', right: 10, top: 13, fontSize: 20 },
-  precisionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  precisionChip: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 16, backgroundColor: 'rgba(104, 112, 118, 0.1)' },
-  precisionChipSelected: { backgroundColor: '#0a7ea4' },
-  precisionText: { fontSize: 13, fontWeight: '600' },
-  precisionTextSelected: { color: '#fff' },
-  toggleCard: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-    padding: 15, borderWidth: 1, borderColor: 'rgba(104, 112, 118, 0.18)', borderRadius: 14,
-  },
-  toggleText: { flex: 1, gap: 2 },
-  saveButton: { backgroundColor: '#0a7ea4', padding: 17, borderRadius: 14, alignItems: 'center', marginTop: 4 },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  disabledButton: { opacity: 0.55 },
+  input: { borderWidth: 1, borderColor: 'rgba(104,112,118,0.25)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, color: '#687076' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 11, paddingVertical: 6, borderRadius: 16, backgroundColor: 'rgba(104,112,118,0.1)' },
+  chipEmoji: { fontSize: 20, lineHeight: 28 },
+  chipSelected: { backgroundColor: '#0a7ea4' },
+  chipText: { fontSize: 13, lineHeight: 20, fontWeight: '600' },
+  chipTextSelected: { color: '#fff' },
+  customCategoryBox: { gap: 16, padding: 14, borderRadius: 16, backgroundColor: 'rgba(104,112,118,0.06)' },
+  emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  emojiButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(104,112,118,0.2)', backgroundColor: 'rgba(104,112,118,0.06)' },
+  emojiButtonSelected: { borderWidth: 2, borderColor: '#0a7ea4', backgroundColor: 'rgba(10,126,164,0.12)' },
+  emojiOption: { fontSize: 25, lineHeight: 34 },
+  emojiInput: { padding: 0, textAlign: 'center', fontSize: 24, color: '#687076' },
+  hint: { fontSize: 12, opacity: 0.56 },
+  dateRow: { flexDirection: 'row', gap: 12 },
+  flex: { flex: 1 },
+  save: { backgroundColor: '#0a7ea4', padding: 17, borderRadius: 14, alignItems: 'center' },
+  saveText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  disabled: { opacity: 0.55 },
 });
